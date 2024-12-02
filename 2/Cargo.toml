@@ -2,5 +2,15 @@
 name = "aoc-2024-2"
 version = "0.1.0"
 edition = "2021"
+default-run = "main"
 
 [dependencies]
+
+[[bin]]
+name = "analyze"
+path = "src/analyze.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+default = true

@@ -1,135 +1,4 @@
-type Report = Vec<i32>;
-type ParsedInput = Vec<Report>;
-
-fn parse_input(input: &str) -> ParsedInput {
-    input
-        .trim()
-        .lines()
-        .map(|line| {
-            line.split_whitespace()
-                .take_while(|&token| token != "#")
-                .filter_map(|token| token.parse::<i32>().ok())
-                .collect::<Report>()
-        })
-        .collect::<ParsedInput>()
-}
-
-mod ex_1 {
-    use super::*;
-    pub fn count_safe_reports(input: &ParsedInput) -> u32 {
-        input
-            .iter()
-            .filter(|report| {
-                let is_increasing = report[1] > report[0];
-                report.windows(2).all(|window| {
-                    let delta = window[1] - window[0];
-                    (1..=3).contains(&delta.abs())
-                        && (is_increasing && delta > 0 || !is_increasing && delta < 0)
-                })
-            })
-            .count() as u32
-    }
-}
-
-mod ex_2_brute {
-    use super::*;
-    pub fn count_safe_reports(input: &ParsedInput) -> u32 {
-        input
-            .iter()
-            .filter(|report| {
-                // all reports derived by removing element at index i
-                let mut derived_reports = report
-                    .iter()
-                    .enumerate()
-                    .map(|(i, _)| [report[..i].to_vec(), report[i + 1..].to_vec()].concat());
-
-                let is_safe = |report: &[i32]| {
-                    let is_increasing = report[1] > report[0];
-                    report.windows(2).all(|window| {
-                        let delta = window[1] - window[0];
-                        (1..=3).contains(&delta.abs())
-                            && (is_increasing && delta > 0 || !is_increasing && delta < 0)
-                    })
-                };
-
-                derived_reports.any(|derived_report| is_safe(&derived_report))
-            })
-            .count() as u32
-    }
-}
-
-mod ex_2 {
-    use crate::ParsedInput;
-
-    fn is_safe(report: &[i32], problem_dampener_quota: i32) -> bool {
-        if report.len() < 2 {
-            return false;
-        }
-
-        fn is_delta_ok(is_increasing: bool, delta: i32) -> bool {
-            (is_increasing && delta > 0 || !is_increasing && delta < 0)
-                && (1..=3).contains(&delta.abs())
-        }
-
-        let is_increasing = report[1] > report[0];
-
-        let mut all_valid = true;
-        for window in report.windows(2) {
-            let delta = window[1] - window[0];
-            if !is_delta_ok(is_increasing, delta) {
-                all_valid = false;
-                break;
-            }
-        }
-        if all_valid {
-            return true;
-        }
-
-        if problem_dampener_quota > 0 {
-            for i in 0..report.len() {
-                if report.len() - 1 < 2 {
-                    continue;
-                }
-
-                // Check if removing element at index i makes sequence valid
-                let is_increasing = if i == 0 {
-                    report[2] > report[1]
-                } else if i == report.len() - 1 {
-                    report[report.len() - 2] > report[report.len() - 3]
-                } else {
-                    // For middle elements, check surrounding elements
-                    report[i + 1] > report[i - 1]
-                };
-
-                let mut valid = true;
-                let mut prev = if i == 0 { report[1] } else { report[0] };
-
-                for j in 1..report.len() {
-                    if j == i {
-                        continue;
-                    }
-                    let curr = report[j];
-                    let delta = curr - prev;
-                    if !is_delta_ok(is_increasing, delta) {
-                        valid = false;
-                        break;
-                    }
-                    prev = curr;
-                }
-
-                if valid {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
-    pub fn count_safe_reports_with_problem_dampener(input: &ParsedInput) -> u32 {
-        input.iter().filter(|report| is_safe(report, 1)).count() as u32
-    }
-}
+use aoc_2024_2::{ex_1, ex_2, ex_2_brute, parse_input};
 
 fn main() {
     let input = std::fs::read_to_string("./input.txt").unwrap();
@@ -376,6 +245,62 @@ mod tests {
     fn ex_2_problem_4_3_5_6() {
         assert_eq!(
             ex_2::count_safe_reports_with_problem_dampener(&parse_input("4 3 5 6")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_5() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("29 32 30 31 34 35 37")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_80() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("31 35 34 36 38 39")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_204() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("52 48 50 48 46")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_229() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("89 83 86 84 81")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_323() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("90 86 88 86 83")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_378() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("65 64 68 71 72 75")),
+            1
+        );
+    }
+
+    #[test]
+    fn ex_2_analyzer_case_402() {
+        assert_eq!(
+            ex_2::count_safe_reports_with_problem_dampener(&parse_input("43 46 44 45 46")),
             1
         );
     }

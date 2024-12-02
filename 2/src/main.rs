@@ -31,11 +31,40 @@ mod ex_1 {
     }
 }
 
+mod ex_2_brute {
+    use super::*;
+    pub fn count_safe_reports(input: &ParsedInput) -> u32 {
+        input
+            .iter()
+            .filter(|report| {
+                // all reports derived by removing element at index i
+                let mut derived_reports = report
+                    .iter()
+                    .enumerate()
+                    .map(|(i, _)| [report[..i].to_vec(), report[i + 1..].to_vec()].concat());
+
+                let is_safe = |report: &[i32]| {
+                    let is_increasing = report[1] > report[0];
+                    report.windows(2).all(|window| {
+                        let delta = window[1] - window[0];
+                        (1..=3).contains(&delta.abs())
+                            && (is_increasing && delta > 0 || !is_increasing && delta < 0)
+                    })
+                };
+
+                derived_reports.any(|derived_report| is_safe(&derived_report))
+            })
+            .count() as u32
+    }
+}
+
 mod ex_2 {
     use crate::ParsedInput;
 
-    fn is_safe(report: &[i32], mut problem_dampener_quota: i32) -> bool {
-        let mut problem_dampener_engaged = false;
+    fn is_safe(report: &[i32], problem_dampener_quota: i32) -> bool {
+        if report.len() < 2 {
+            return false;
+        }
 
         fn is_delta_ok(is_increasing: bool, delta: i32) -> bool {
             (is_increasing && delta > 0 || !is_increasing && delta < 0)
@@ -44,52 +73,61 @@ mod ex_2 {
 
         let is_increasing = report[1] > report[0];
 
-        let almost_all_safe = report.windows(3).all(|window| {
-            if problem_dampener_engaged {
-                return true;
-            }
-
+        let mut all_valid = true;
+        for window in report.windows(2) {
             let delta = window[1] - window[0];
-            let is_safe = is_delta_ok(is_increasing, delta);
-
-            if is_safe {
-                return true;
+            if !is_delta_ok(is_increasing, delta) {
+                all_valid = false;
+                break;
             }
-
-            if problem_dampener_quota > 0 {
-                let delta = window[2] - window[0];
-                let is_safe = is_delta_ok(is_increasing, delta);
-
-                if is_safe {
-                    problem_dampener_engaged = true;
-                    problem_dampener_quota -= 1;
-                }
-
-                return is_safe;
-            }
-
-            false
-        });
-
-        if !almost_all_safe {
-            return false;
         }
-
-        if problem_dampener_engaged || problem_dampener_quota > 0 {
+        if all_valid {
             return true;
         }
 
-        is_delta_ok(
-            is_increasing,
-            report[report.len() - 1] - report[report.len() - 2],
-        )
+        if problem_dampener_quota > 0 {
+            for i in 0..report.len() {
+                if report.len() - 1 < 2 {
+                    continue;
+                }
+
+                // Check if removing element at index i makes sequence valid
+                let is_increasing = if i == 0 {
+                    report[2] > report[1]
+                } else if i == report.len() - 1 {
+                    report[report.len() - 2] > report[report.len() - 3]
+                } else {
+                    // For middle elements, check surrounding elements
+                    report[i + 1] > report[i - 1]
+                };
+
+                let mut valid = true;
+                let mut prev = if i == 0 { report[1] } else { report[0] };
+
+                for j in 1..report.len() {
+                    if j == i {
+                        continue;
+                    }
+                    let curr = report[j];
+                    let delta = curr - prev;
+                    if !is_delta_ok(is_increasing, delta) {
+                        valid = false;
+                        break;
+                    }
+                    prev = curr;
+                }
+
+                if valid {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 
     pub fn count_safe_reports_with_problem_dampener(input: &ParsedInput) -> u32 {
-        input
-            .iter()
-            .filter(|report| is_safe(report, 1) || is_safe(&report[1..], 0))
-            .count() as u32
+        input.iter().filter(|report| is_safe(report, 1)).count() as u32
     }
 }
 
@@ -101,6 +139,7 @@ fn main() {
         "{:?}",
         ex_2::count_safe_reports_with_problem_dampener(&parsed_input)
     );
+    println!("{:?}", ex_2_brute::count_safe_reports(&parsed_input));
 }
 
 #[cfg(test)]

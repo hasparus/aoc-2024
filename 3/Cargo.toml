@@ -1,0 +1,13 @@
+[package]
+name = "aoc-2024-3"
+version = "0.1.0"
+edition = "2021"
+default-run = "main"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+default = true
+
+[dependencies]
+regex = "1.11.1"

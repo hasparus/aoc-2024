@@ -1,3 +1,4 @@
 **/target
 
-**/input.txt # AoC terms and conditions ask to avoid sharing inputs
+# AoC terms and conditions ask to avoid sharing inputs
+**/input.txt

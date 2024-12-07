@@ -309,7 +309,6 @@ function detectCycle(map: Map): boolean {
 
         setCell(map, guard.position, VISITED_BOTH);
         guard.direction = rotateRight(guard.direction);
-        guard.position = add(guard.position, MOVEMENTS[guard.direction]);
       } else {
         setCell(map, guard.position, trail);
         guard.position = forward;

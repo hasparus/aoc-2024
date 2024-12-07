@@ -7,7 +7,7 @@ struct Equation {
     numbers: Vec<u64>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Operator {
     Add,
     Multiply,
@@ -15,17 +15,39 @@ enum Operator {
 }
 
 impl Operator {
-    fn apply(&self, a: u64, b: u64) -> Option<u64> {
+    fn apply_reverse(&self, target: u64, operand: u64) -> Option<u64> {
         match self {
-            Operator::Add => Some(a + b),
-            Operator::Multiply => a.checked_mul(b),
-            Operator::Concatenate => {
-                let b_len = b.to_string().len() as u32;
-                10_u64
-                    .checked_pow(b_len)
-                    .and_then(|m| a.checked_mul(m))
-                    .and_then(|r| r.checked_add(b))
+            Operator::Add => {
+                if target >= operand {
+                    Some(target - operand)
+                } else {
+                    None
+                }
             }
+            Operator::Multiply => {
+                if operand != 0 && target % operand == 0 {
+                    Some(target / operand)
+                } else {
+                    None
+                }
+            }
+            Operator::Concatenate => {
+                let operand_len = operand.to_string().len();
+                let divisor = 10_u64.checked_pow(operand_len as u32)?;
+                if target >= operand && target % divisor == operand {
+                    Some(target / divisor)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    fn can_be_used_with(&self, target: u64, operand: u64) -> bool {
+        match self {
+            Operator::Add => true,
+            Operator::Multiply => operand != 0 && target % operand == 0,
+            Operator::Concatenate => operand != 0,
         }
     }
 }
@@ -51,25 +73,23 @@ impl FromStr for Equation {
 
 impl Equation {
     fn is_solvable(&self, operators: &[Operator]) -> bool {
-        self.try_solve(1, self.numbers[0], operators)
+        self.try_solve(self.numbers.len() - 1, self.target, operators)
     }
 
-    fn try_solve(&self, pos: usize, current: u64, operators: &[Operator]) -> bool {
-        if pos >= self.numbers.len() {
-            return current == self.target;
+    fn try_solve(&self, pos: usize, target: u64, operators: &[Operator]) -> bool {
+        if pos == 0 {
+            return self.numbers[0] == target;
         }
 
         let next = self.numbers[pos];
-
-        if current > self.target && next != 0 {
-            return false;
-        }
-
-        operators.iter().any(|op| {
-            op.apply(current, next).map_or(false, |result| {
-                result <= self.target && self.try_solve(pos + 1, result, operators)
+        operators
+            .iter()
+            .filter(|op| op.can_be_used_with(target, next))
+            .any(|op| {
+                op.apply_reverse(target, next).map_or(false, |prev_target| {
+                    self.try_solve(pos - 1, prev_target, operators)
+                })
             })
-        })
     }
 }
 

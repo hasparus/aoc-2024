@@ -1,5 +1,5 @@
 fn main() {
-    let input = std::fs::read_to_string("../input.txt").expect("Failed to read input file");
+    let input = std::fs::read_to_string("./input.txt").expect("Failed to read input file");
     let result = solve(&input);
     println!("Result: {}", result);
 }
@@ -64,12 +64,15 @@ fn parse_input(input: &str) -> Disk {
         .trim()
         .chars()
         .enumerate()
-        .map(|(i, c)| {
-            let size = c.to_digit(10).unwrap() as usize;
+        .filter_map(|(i, c)| {
+            let size = c.to_digit(10)?;
             if i % 2 == 0 {
-                DiskItem::File(File { id: i / 2, size })
+                Some(DiskItem::File(File {
+                    id: i / 2,
+                    size: size as usize,
+                }))
             } else {
-                DiskItem::FreeSpace(size)
+                Some(DiskItem::FreeSpace(size as usize))
             }
         })
         .collect()
@@ -93,28 +96,28 @@ fn compress(disk: Disk) -> Compressed {
                 free_space_remaining = usize::MAX;
 
                 res.push(disk[left]);
-                println!("pushing file {:?}", disk[left]);
-                println!("{}", stringify_id_expansion(&res));
+                // println!("pushing file {:?}", disk[left]);
+                // println!("{}", stringify_id_expansion(&res));
                 left += 1;
             }
             // If right is free space, move left
             (_, DiskItem::FreeSpace(_)) => {
-                println!("moving right to left");
-                println!("{}", stringify_id_expansion(&res));
+                // println!("moving right to left");
+                // println!("{}", stringify_id_expansion(&res));
                 right -= 1;
             }
             // If left is free space and right is file
             (DiskItem::FreeSpace(free_space), DiskItem::File(file)) => {
-                println!("reconciling");
+                // println!("moving file from right to the free space");
                 let free_space = std::cmp::min(free_space_remaining, *free_space);
                 let file_size = std::cmp::min(post_split_file_size, file.size);
 
-                println!("file.id: {}", file.id);
-                println!("left: {}, right: {}", left, right);
-                println!("free_space: {}, file_size: {}", free_space, file_size);
+                // println!("file.id: {}", file.id);
+                // println!("left: {}, right: {}", left, right);
+                // println!("free_space: {}, file_size: {}", free_space, file_size);
 
                 if free_space >= file_size {
-                    println!("more empty space than file size");
+                    // println!("more empty space than file size");
                     post_split_file_size = usize::MAX;
                     free_space_remaining = free_space - file_size;
 
@@ -125,7 +128,7 @@ fn compress(disk: Disk) -> Compressed {
 
                     right -= 1;
                 } else {
-                    println!("less empty space than file size");
+                    // println!("less empty space than file size");
                     post_split_file_size = file_size - free_space;
                     free_space_remaining = 0;
 
@@ -137,7 +140,7 @@ fn compress(disk: Disk) -> Compressed {
                     left += 1;
                 }
 
-                println!("{}", stringify_id_expansion(&res));
+                // println!("{}", stringify_id_expansion(&res));
             }
         }
     }
@@ -154,21 +157,25 @@ fn compress(disk: Disk) -> Compressed {
     res
 }
 
-fn calculate_checksum(compressed: &str) -> usize {
-    compressed
-        .chars()
-        .enumerate()
-        .map(|(i, c)| match c {
-            '0'..='9' => (c.to_digit(10).unwrap() as usize) * i,
-            _ => 0,
-        })
-        .sum()
+fn calculate_checksum(compressed: &Compressed) -> usize {
+    let mut sum = 0;
+    let mut block_index = 0;
+    compressed.iter().for_each(|item| match item {
+        DiskItem::File(file) => {
+            for _ in 0..file.size {
+                sum += block_index * file.id;
+                block_index += 1;
+            }
+        }
+        DiskItem::FreeSpace(_) => (),
+    });
+    sum
 }
 
 fn solve(input: &str) -> usize {
     let disk = parse_input(input);
     let compressed = compress(disk);
-    calculate_checksum(&stringify_id_expansion(&compressed))
+    calculate_checksum(&compressed)
 }
 
 #[cfg(test)]
@@ -236,5 +243,16 @@ mod tests {
         println!("{}", stringify_id_expansion(&y));
 
         assert_eq!(solve(EXAMPLE), 1928);
+    }
+
+    #[test]
+    fn test_example_expanded() {
+        let input = "012333133121414131401";
+        let parsed = parse_input(input);
+        println!("{}", stringify_id_expansion(&parsed.0));
+        let compressed = compress(parsed);
+        println!("{}", stringify_id_expansion(&compressed));
+
+        assert_eq!(solve(input), 2029);
     }
 }

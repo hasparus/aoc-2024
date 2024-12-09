@@ -2,6 +2,9 @@ fn main() {
     let input = std::fs::read_to_string("./input.txt").expect("Failed to read input file");
     let result = solve(&input);
     println!("Result: {}", result);
+
+    let result_ex2 = solve_ex2(&input);
+    println!("Result ex2: {}", result_ex2);
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -157,6 +160,40 @@ fn compress(disk: Disk) -> Compressed {
     res
 }
 
+fn compress_without_fragmentation(disk: Disk) -> Compressed {
+    let mut res = disk.0.clone();
+
+    // let mut last_printed = stringify_id_expansion(&res);
+    // println!("{}", last_printed);
+
+    for r in (0..res.len()).rev() {
+        if let DiskItem::File(file) = res[r] {
+            for l in 0..r {
+                if let DiskItem::FreeSpace(free_space) = res[l] {
+                    let remaining_free_space = free_space as isize - file.size as isize;
+                    if remaining_free_space >= 0 {
+                        res[r] = DiskItem::FreeSpace(file.size);
+                        res[l] = DiskItem::File(file);
+                        if remaining_free_space > 0 {
+                            res.insert(l + 1, DiskItem::FreeSpace(remaining_free_space as usize));
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        // let new_printed = stringify_id_expansion(&res);
+        // if new_printed != last_printed {
+        //     last_printed = new_printed;
+        //     // println!("{}", last_printed);
+        // }
+    }
+
+    res
+}
+
 fn calculate_checksum(compressed: &Compressed) -> usize {
     let mut sum = 0;
     let mut block_index = 0;
@@ -167,7 +204,9 @@ fn calculate_checksum(compressed: &Compressed) -> usize {
                 block_index += 1;
             }
         }
-        DiskItem::FreeSpace(_) => (),
+        DiskItem::FreeSpace(size) => {
+            block_index += size;
+        }
     });
     sum
 }
@@ -175,6 +214,12 @@ fn calculate_checksum(compressed: &Compressed) -> usize {
 fn solve(input: &str) -> usize {
     let disk = parse_input(input);
     let compressed = compress(disk);
+    calculate_checksum(&compressed)
+}
+
+fn solve_ex2(input: &str) -> usize {
+    let disk = parse_input(input);
+    let compressed = compress_without_fragmentation(disk);
     calculate_checksum(&compressed)
 }
 
@@ -254,5 +299,19 @@ mod tests {
         println!("{}", stringify_id_expansion(&compressed));
 
         assert_eq!(solve(input), 2029);
+    }
+
+    #[test]
+    fn compress_without_fragmentation_ex2() {
+        let compressed = compress_without_fragmentation(parse_input(EXAMPLE));
+        assert_eq!(
+            stringify_id_expansion(&compressed),
+            "00992111777.44.333....5555.6666.....8888.."
+        );
+    }
+
+    #[test]
+    fn test_example_ex2() {
+        assert_eq!(solve_ex2(EXAMPLE), 2858);
     }
 }

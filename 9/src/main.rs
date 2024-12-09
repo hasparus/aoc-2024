@@ -4,13 +4,13 @@ fn main() {
     println!("Result: {}", result);
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 struct File {
     id: usize,
     size: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum DiskItem {
     File(File),
     FreeSpace(usize),
@@ -76,19 +76,21 @@ fn parse_input(input: &str) -> Disk {
 }
 
 fn compress(disk: Disk) -> Compressed {
-    let mut result = Vec::with_capacity(disk.0.len());
-    // First, copy all items to result
-    for item in disk {
-        result.push(item);
-    }
+    let mut res = Vec::with_capacity(disk.0.len() / 2);
+
+    let disk = disk.0;
 
     let mut left = 0;
-    let mut right = result.len() - 1;
+    let mut right = disk.len() - 1;
+
+    let mut free_space_remaining = 0;
+    let mut post_split_file_size = usize::MAX;
 
     while left < right {
-        match (&result[left], &result[right]) {
+        match (&disk[left], &disk[right]) {
             // If left is a file, just move to next position
             (DiskItem::File(_), _) => {
+                res.push(disk[left]);
                 left += 1;
             }
             // If right is free space, move left
@@ -97,36 +99,35 @@ fn compress(disk: Disk) -> Compressed {
             }
             // If left is free space and right is file
             (DiskItem::FreeSpace(free_space), DiskItem::File(file)) => {
-                let available_space = *free_space;
-                let file_size = file.size;
-                let file_id = file.id;
+                let free_space = std::cmp::max(free_space_remaining, *free_space);
+                let file_size = std::cmp::min(post_split_file_size, file.size);
 
-                // If we can fit the entire file
-                if available_space >= file_size {
-                    result[left] = DiskItem::File(File {
-                        id: file_id,
+                if free_space >= file_size {
+                    post_split_file_size = 0;
+                    free_space_remaining = free_space - file_size;
+
+                    res.push(DiskItem::File(File {
+                        id: file.id,
                         size: file_size,
-                    });
-                    result[right] = DiskItem::FreeSpace(file_size);
-                    left += 1;
+                    }));
+
                     right -= 1;
                 } else {
-                    // If we can only fit part of the file, we'll need to split it
-                    result[left] = DiskItem::File(File {
-                        id: file_id,
-                        size: available_space,
-                    });
-                    result[right] = DiskItem::File(File {
-                        id: file_id,
-                        size: file_size - available_space,
-                    });
+                    post_split_file_size = file_size - free_space;
+                    free_space_remaining = 0;
+
+                    res.push(DiskItem::File(File {
+                        id: file.id,
+                        size: free_space,
+                    }));
+
                     left += 1;
                 }
             }
         }
     }
 
-    result
+    res
 }
 
 fn calculate_checksum(compressed: &Compressed) -> usize {

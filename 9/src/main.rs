@@ -49,7 +49,7 @@ impl std::fmt::Display for Disk {
 
 type Compressed = Vec<DiskItem>;
 
-fn stringify_id_expansion(disk: Vec<DiskItem>) -> String {
+fn stringify_id_expansion(disk: &[DiskItem]) -> String {
     disk.iter()
         .map(|item| match item {
             DiskItem::File(file) => file.id.to_string().repeat(file.size),
@@ -83,27 +83,39 @@ fn compress(disk: Disk) -> Compressed {
     let mut left = 0;
     let mut right = disk.len() - 1;
 
-    let mut free_space_remaining = 0;
+    let mut free_space_remaining = usize::MAX;
     let mut post_split_file_size = usize::MAX;
 
     while left < right {
         match (&disk[left], &disk[right]) {
             // If left is a file, just move to next position
             (DiskItem::File(_), _) => {
+                free_space_remaining = usize::MAX;
+
                 res.push(disk[left]);
+                println!("pushing file {:?}", disk[left]);
+                println!("{}", stringify_id_expansion(&res));
                 left += 1;
             }
             // If right is free space, move left
             (_, DiskItem::FreeSpace(_)) => {
+                println!("moving right to left");
+                println!("{}", stringify_id_expansion(&res));
                 right -= 1;
             }
             // If left is free space and right is file
             (DiskItem::FreeSpace(free_space), DiskItem::File(file)) => {
-                let free_space = std::cmp::max(free_space_remaining, *free_space);
+                println!("reconciling");
+                let free_space = std::cmp::min(free_space_remaining, *free_space);
                 let file_size = std::cmp::min(post_split_file_size, file.size);
 
+                println!("file.id: {}", file.id);
+                println!("left: {}, right: {}", left, right);
+                println!("free_space: {}, file_size: {}", free_space, file_size);
+
                 if free_space >= file_size {
-                    post_split_file_size = 0;
+                    println!("more empty space than file size");
+                    post_split_file_size = usize::MAX;
                     free_space_remaining = free_space - file_size;
 
                     res.push(DiskItem::File(File {
@@ -113,6 +125,7 @@ fn compress(disk: Disk) -> Compressed {
 
                     right -= 1;
                 } else {
+                    println!("less empty space than file size");
                     post_split_file_size = file_size - free_space;
                     free_space_remaining = 0;
 
@@ -123,20 +136,31 @@ fn compress(disk: Disk) -> Compressed {
 
                     left += 1;
                 }
+
+                println!("{}", stringify_id_expansion(&res));
             }
+        }
+    }
+
+    if left == right {
+        if let DiskItem::File(file) = disk[left] {
+            res.push(DiskItem::File(File {
+                id: file.id,
+                size: std::cmp::min(post_split_file_size, file.size),
+            }));
         }
     }
 
     res
 }
 
-fn calculate_checksum(compressed: &Compressed) -> usize {
+fn calculate_checksum(compressed: &str) -> usize {
     compressed
-        .iter()
+        .chars()
         .enumerate()
-        .map(|(i, item)| match item {
-            DiskItem::File(file) => file.id * i,
-            DiskItem::FreeSpace(_) => 0,
+        .map(|(i, c)| match c {
+            '0'..='9' => (c.to_digit(10).unwrap() as usize) * i,
+            _ => 0,
         })
         .sum()
 }
@@ -144,7 +168,7 @@ fn calculate_checksum(compressed: &Compressed) -> usize {
 fn solve(input: &str) -> usize {
     let disk = parse_input(input);
     let compressed = compress(disk);
-    calculate_checksum(&compressed)
+    calculate_checksum(&stringify_id_expansion(&compressed))
 }
 
 #[cfg(test)]
@@ -183,18 +207,34 @@ mod tests {
     #[test]
     fn stringify_id_expansion_cases() {
         assert_eq!(
-            stringify_id_expansion(parse_input("12345").0),
+            stringify_id_expansion(&parse_input("12345").0),
             "0..111....22222"
         );
 
         assert_eq!(
-            stringify_id_expansion(parse_input(EXAMPLE).0),
+            stringify_id_expansion(&parse_input(EXAMPLE).0),
             "00...111...2...333.44.5555.6666.777.888899"
         );
     }
 
-    // #[test]
-    // fn test_example() {
-    //     assert_eq!(solve(EXAMPLE), 1928);
-    // }
+    #[test]
+    fn stringify_id_expansion_example() {
+        let parsed = parse_input(EXAMPLE);
+        let compressed = compress(parsed);
+        assert_eq!(
+            stringify_id_expansion(&compressed),
+            "0099811188827773336446555566"
+        );
+    }
+
+    #[test]
+    fn test_example() {
+        let x = parse_input(EXAMPLE);
+        println!("{}", stringify_id_expansion(&x.0));
+        let y = compress(x);
+        println!("{:?}", y);
+        println!("{}", stringify_id_expansion(&y));
+
+        assert_eq!(solve(EXAMPLE), 1928);
+    }
 }

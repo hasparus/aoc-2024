@@ -11,12 +11,10 @@ use grid::Grid;
 type Height = u32;
 type Position = (u32, u32);
 
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 struct Trailhead(Position);
-enum Score {
-    SameAs(Trailhead),
-    Score(u64),
-}
+
+type Score = u64;
 
 const TRAILHEAD_HEIGHT: Height = 0;
 const SUMMIT_HEIGHT: Height = 9;
@@ -52,78 +50,54 @@ fn parse_input(input: &str) -> (Grid<Height>, Vec<Trailhead>) {
     (grid, trailheads)
 }
 
-fn sum_scores(scores: &HashMap<Trailhead, Score>) -> u64 {
-    scores
-        .values()
-        .map(|score| match score {
-            Score::Score(s) => *s,
-            Score::SameAs(t) => match scores.get(t) {
-                Some(Score::Score(s)) => *s,
-                _ => panic!("Invalid score reference"),
-            },
-        })
-        .sum()
-}
+mod ex1 {
+    use super::*;
 
-fn solve(input: &str) -> u64 {
-    let (grid, trailheads) = parse_input(input);
-    let mut scores = HashMap::<Trailhead, Score>::new();
+    pub fn solve(input: &str) -> u64 {
+        let (grid, trailheads) = parse_input(input);
+        let mut scores = HashMap::<Trailhead, Score>::new();
 
-    for trailhead in trailheads {
-        match scores.get(&trailhead) {
-            Some(Score::SameAs(_)) => continue,
-            Some(Score::Score(_)) => panic!("Trailhead already has a score"),
-            None => {}
-        }
-
-        let mut score = 0;
-        let mut visited = HashSet::new();
-        let mut queue = VecDeque::new();
-        queue.push_back((trailhead.0, 0));
-
-        while let Some((pos, height)) = queue.pop_front() {
-            if !visited.insert(pos) {
-                // we continue if the position was already visited
+        for trailhead in trailheads {
+            if scores.contains_key(&trailhead) {
                 continue;
             }
 
-            if height == SUMMIT_HEIGHT {
-                score += 1;
-                continue;
-            }
+            let mut score = 0;
+            let mut visited = HashSet::new();
+            let mut queue = VecDeque::new();
+            queue.push_back((trailhead.0, 0));
 
-            if grid[pos] == 0 && pos != trailhead.0 {
-                scores.insert(Trailhead(pos), Score::SameAs(trailhead.clone()));
-                continue;
-            }
-
-            for (dx, dy) in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
-                let new_x = pos.0 as i32 + dx;
-                let new_y = pos.1 as i32 + dy;
-
-                if !grid.in_bounds(new_x, new_y) {
+            while let Some((pos, height)) = queue.pop_front() {
+                if !visited.insert(pos) {
+                    // we continue if the position was already visited
                     continue;
                 }
 
-                let new_pos = (new_x as u32, new_y as u32);
-                let new_height = grid[new_pos];
+                if height == SUMMIT_HEIGHT {
+                    score += 1;
+                    continue;
+                }
 
-                // Only proceed if the height increases by exactly 1
-                if new_height == height + 1 {
-                    queue.push_back((new_pos, new_height));
+                for (dc, dr) in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
+                    let new_pos = (pos.0 as isize + dc, pos.1 as isize + dr);
+                    let new_height = grid.get(new_pos.0, new_pos.1);
+
+                    if *new_height == height + 1 {
+                        queue.push_back(((new_pos.0 as u32, new_pos.1 as u32), *new_height));
+                    }
                 }
             }
+
+            scores.insert(trailhead, score);
         }
 
-        scores.insert(trailhead, Score::Score(score));
+        scores.values().sum()
     }
-
-    sum_scores(&scores)
 }
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
-    println!("{}", solve(&input));
+    println!("{}", ex1::solve(&input));
 }
 
 #[cfg(test)]
@@ -140,7 +114,7 @@ mod tests {
             8765
             9876
         ";
-        assert_eq!(solve(input), 1);
+        assert_eq!(ex1::solve(input), 1);
     }
 
     #[test]
@@ -154,25 +128,25 @@ mod tests {
             8.....8
             9.....9
         ";
-        assert_eq!(solve(input), 2);
+        assert_eq!(ex1::solve(input), 2);
     }
 
     #[test]
-    fn test_two_trailheads() {
+    fn test_all_reachable() {
         let input = "\
-            ...0...
-            ...1210
-            ...2...
+            ..90..9
+            ...1.98
+            ...2..7
             6543456
-            7.....7
-            8.....8
-            9.....9
+            765.987
+            876....
+            987....
         ";
-        assert_eq!(solve(input), 2);
+        assert_eq!(ex1::solve(input), 4);
     }
 
-    // #[test]
-    // fn test_example() {
-    //     assert_eq!(solve(EXAMPLE), 36);
-    // }
+    #[test]
+    fn test_example() {
+        assert_eq!(ex1::solve(EXAMPLE), 36);
+    }
 }

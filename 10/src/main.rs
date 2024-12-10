@@ -95,9 +95,53 @@ mod ex1 {
     }
 }
 
+mod ex2 {
+    use super::*;
+
+    pub fn solve(input: &str) -> u64 {
+        let (grid, trailheads) = parse_input(input);
+        let mut paths = vec![vec![0u64; grid.width()]; grid.height()];
+
+        for trailhead in trailheads {
+            paths[trailhead.0 .0 as usize][trailhead.0 .1 as usize] = 1;
+        }
+
+        for height in 0..SUMMIT_HEIGHT {
+            for (row, col, h) in grid.cells() {
+                if *h != height {
+                    continue;
+                }
+
+                let current_paths = paths[row as usize][col as usize];
+                for (dr, dc) in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
+                    let new_row = row + dr;
+                    let new_col = col + dc;
+
+                    if !grid.in_bounds(new_row, new_col) {
+                        continue;
+                    }
+
+                    if grid[(new_row, new_col)] == height + 1 {
+                        paths[new_row as usize][new_col as usize] += current_paths;
+                    }
+                }
+            }
+        }
+
+        grid.cells().fold(0, |acc, (r, c, h)| {
+            if *h == SUMMIT_HEIGHT {
+                acc + paths[r as usize][c as usize]
+            } else {
+                acc
+            }
+        })
+    }
+}
+
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
     println!("{}", ex1::solve(&input));
+    println!("{}", ex2::solve(&input));
 }
 
 #[cfg(test)]
@@ -148,5 +192,25 @@ mod tests {
     #[test]
     fn test_example() {
         assert_eq!(ex1::solve(EXAMPLE), 36);
+    }
+
+    #[test]
+    fn test_simple_ex2() {
+        let input = "\
+            .....0.
+            ..4321.
+            ..5..2.
+            ..6543.
+            ..7..4.
+            ..8765.
+            ..9....
+        ";
+
+        assert_eq!(ex2::solve(input), 3);
+    }
+
+    #[test]
+    fn test_example_ex2() {
+        assert_eq!(ex2::solve(EXAMPLE), 81);
     }
 }

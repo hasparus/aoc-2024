@@ -45,63 +45,6 @@ fn solve_ex1(stones: &[Stone], iterations: u32) -> usize {
     stones.len()
 }
 
-// this won't OOM, but it's still exponential time
-#[allow(unused)]
-mod memoized {
-    use std::collections::VecDeque;
-
-    use super::*;
-    use memoize::memoize;
-
-    #[memoize]
-    fn transform(stone: Stone) -> [Option<Stone>; 2] {
-        if stone == 0 {
-            return [Some(1), None];
-        }
-
-        let digits = count_digits(stone);
-        if digits % 2 == 0 {
-            let mid = 10_u64.pow(digits / 2);
-            return [Some(stone / mid), Some(stone % mid)];
-        }
-
-        [Some(stone * 2024), None]
-    }
-
-    pub fn solve(stones: &[Stone], iterations: u32) -> usize {
-        let mut result = 0;
-
-        let mut stack = stones
-            .iter()
-            .map(|stone| (*stone, iterations))
-            .collect::<VecDeque<_>>();
-
-        let mut i = 0;
-        while let Some((stone, time_to_live)) = stack.pop_back() {
-            if i % 1000000 == 0 {
-                println!("stack {} res {} ttl {}", stack.len(), result, time_to_live);
-            }
-            i += 1;
-
-            if time_to_live == 0 {
-                // This is silly, because we just increment, and we could handle more than one stone at a time.
-                result += 1;
-                continue;
-            }
-
-            let [left, right] = transform(stone);
-            if let Some(left) = left {
-                stack.push_back((left, time_to_live - 1));
-            }
-            if let Some(right) = right {
-                stack.push_back((right, time_to_live - 1));
-            }
-        }
-
-        result
-    }
-}
-
 mod buckets {
     use super::*;
     use std::collections::HashMap;
@@ -167,14 +110,6 @@ mod tests {
     fn test_solve_example() {
         let stones = parse_input(EXAMPLE);
         let result = solve_ex1(&stones, 25);
-        println!("{:?}", result);
-        assert_eq!(result, 55312);
-    }
-
-    #[test]
-    fn test_solve_example_ex2_with_memoization() {
-        let stones = parse_input(EXAMPLE);
-        let result = memoized::solve(&stones, 25);
         println!("{:?}", result);
         assert_eq!(result, 55312);
     }

@@ -86,8 +86,11 @@ fn main() {
     let result = solve_ex1(&stones, 25);
     println!("{:?}", result);
 
+    // measure time
+    let start = std::time::Instant::now();
     let result = buckets::solve(&stones, 75);
     println!("{:?}", result);
+    println!("Time: {:?}", start.elapsed());
 }
 
 #[cfg(test)]

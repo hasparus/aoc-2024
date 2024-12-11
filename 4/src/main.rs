@@ -223,6 +223,6 @@ mod tests {
     #[test]
     fn test_example() {
         let grid = input_to_grid(INPUT, '.');
-        assert_eq!(solve_ex1(grid), 18);
+        assert_eq!(solve_ex1(&grid), 18);
     }
 }

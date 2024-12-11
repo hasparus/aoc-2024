@@ -52,6 +52,7 @@ impl std::fmt::Display for Disk {
 
 type Compressed = Vec<DiskItem>;
 
+#[allow(dead_code)]
 fn stringify_id_expansion(disk: &[DiskItem]) -> String {
     disk.iter()
         .map(|item| match item {

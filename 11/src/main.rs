@@ -15,8 +15,8 @@ fn count_digits(stone: u64) -> u32 {
     (stone as f64).log10() as u32 + 1
 }
 
-fn solve_ex1(stones: &Vec<Stone>, iterations: u32) -> usize {
-    let mut stones = stones.clone();
+fn solve_ex1(stones: &[Stone], iterations: u32) -> usize {
+    let mut stones = stones.to_vec();
 
     for _ in 0..iterations {
         let mut new_stones = Vec::new();
@@ -45,6 +45,8 @@ fn solve_ex1(stones: &Vec<Stone>, iterations: u32) -> usize {
     stones.len()
 }
 
+// this won't OOM, but it's still exponential time
+#[allow(unused)]
 mod memoized {
     use std::collections::VecDeque;
 
@@ -82,6 +84,7 @@ mod memoized {
             i += 1;
 
             if time_to_live == 0 {
+                // This is silly, because we just increment, and we could handle more than one stone at a time.
                 result += 1;
                 continue;
             }
@@ -99,11 +102,38 @@ mod memoized {
     }
 }
 
-mod ex2_good {
+mod buckets {
     use super::*;
+    use std::collections::HashMap;
 
-    fn solve(stones: &[Stone], iterations: u32) -> usize {
-        0
+    pub fn solve(stones: &[Stone], iterations: u32) -> usize {
+        let mut buckets =
+            HashMap::<Stone, usize>::from_iter(stones.iter().map(|stone| (*stone, 1)));
+
+        for _ in 0..iterations {
+            let mut new_buckets = HashMap::new();
+
+            for (stone, count) in buckets.iter() {
+                if *stone == 0 {
+                    *new_buckets.entry(1).or_insert(0) += count;
+                    continue;
+                }
+
+                let digits = count_digits(*stone);
+                if digits % 2 == 0 {
+                    let mid = 10_u64.pow(digits / 2);
+                    *new_buckets.entry(stone / mid).or_insert(0) += count;
+                    *new_buckets.entry(stone % mid).or_insert(0) += count;
+                    continue;
+                }
+
+                *new_buckets.entry(stone * 2024).or_insert(0) += *count;
+            }
+
+            buckets = new_buckets;
+        }
+
+        buckets.values().sum()
     }
 }
 
@@ -113,7 +143,7 @@ fn main() {
     let result = solve_ex1(&stones, 25);
     println!("{:?}", result);
 
-    let result = memoized::solve(&stones, 75);
+    let result = buckets::solve(&stones, 75);
     println!("{:?}", result);
 }
 
@@ -142,9 +172,17 @@ mod tests {
     }
 
     #[test]
-    fn test_solve_example_ex2() {
+    fn test_solve_example_ex2_with_memoization() {
         let stones = parse_input(EXAMPLE);
         let result = memoized::solve(&stones, 25);
+        println!("{:?}", result);
+        assert_eq!(result, 55312);
+    }
+
+    #[test]
+    fn test_solve_example_ex2_with_buckets() {
+        let stones = parse_input(EXAMPLE);
+        let result = buckets::solve(&stones, 25);
         println!("{:?}", result);
         assert_eq!(result, 55312);
     }

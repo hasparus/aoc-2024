@@ -18,6 +18,17 @@ pub struct InputsFile {
     pub sections: Vec<Input>,
 }
 
+impl InputsFile {
+    pub fn get_input(&self, name: &str) -> &Input {
+        self.sections
+            .iter()
+            .find(|input| input.name.to_lowercase() == name.to_lowercase())
+            .unwrap_or_else(|| {
+                panic!("Input with name {} not found", name);
+            })
+    }
+}
+
 fn parse_title(input: &str) -> IResult<&str, String> {
     let (input, title) = preceded(tag("# "), not_line_ending)(input)?;
     Ok((input, title.trim().to_string()))
@@ -67,14 +78,14 @@ mod tests {
     #[test]
     fn test_read_input() {
         let input = read_input("inputs.md").expect("Should parse input file");
-        assert_eq!(input.sections.len(), 3);
         assert_eq!(
             input
                 .sections
                 .iter()
+                .take(4)
                 .map(|s| s.name.clone())
                 .collect::<Vec<_>>(),
-            ["Trivial", "Simple", "Input"]
+            ["Trivial", "Simple", "Input", "Inner Sides"]
         );
     }
 }

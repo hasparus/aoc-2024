@@ -28,8 +28,8 @@ fn is_safe(report: &[i32], problem_dampener_quota: i32) -> bool {
         // Try removing each number
         for skip_idx in 0..report.len() {
             let mut valid = true;
-            let mut prev = None;
-            let mut next = None;
+            let mut prev: Option<i32> = None;
+            let mut next: Option<i32> = None;
             let mut is_increasing = None;
 
             // First, find a valid pair to determine direction
@@ -44,7 +44,6 @@ fn is_safe(report: &[i32], problem_dampener_quota: i32) -> bool {
                     continue;
                 }
                 if next.is_none() {
-                    next = Some(curr);
                     let delta = curr - prev.unwrap();
                     if (1..=3).contains(&delta.abs()) {
                         is_increasing = Some(delta > 0);

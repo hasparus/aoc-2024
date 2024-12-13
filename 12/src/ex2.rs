@@ -8,26 +8,28 @@ fn get_window<T: Copy>(grid: &Grid<T>, pos: (isize, isize)) -> [T; 4] {
     window_coords(pos).map(|(x, y)| *grid.get(x, y))
 }
 
-fn corner_in_window(window: &[char; 4], region_symbol: char) -> bool {
+fn corner_in_window(window: &[isize; 4], region_symbol: isize) -> u8 {
     let count = window.iter().filter(|c| **c == region_symbol).count();
 
     // we'rein a corner if there is just one occurence of the region symbol
     if count == 1 {
-        return true;
+        return 1;
     }
 
-    // or we have a common corner of two regions, so the symbol is present on a diagonal
-    if count == 2 {
-        return (window[0] == region_symbol && window[3] == region_symbol)
-            || (window[1] == region_symbol && window[2] == region_symbol);
+    // // or we have a common corner of two regions, so the symbol is present on a diagonal
+    if count == 2
+        && ((window[0] == region_symbol && window[3] == region_symbol)
+            || (window[1] == region_symbol && window[2] == region_symbol))
+    {
+        return 2;
     }
 
     // if we have 3 occurences, we're in an inner corner
     if count == 3 {
-        return true;
+        return 1;
     }
 
-    false
+    0
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -117,7 +119,6 @@ pub fn solve(input: &str) -> usize {
         for c in 0..=grid.width() {
             let pos = (r as isize, c as isize);
             let regions_window = get_window(&region_indices, pos);
-            let chars_window = get_window(&grid, pos);
 
             let unique_regions = std::collections::HashSet::<isize>::from_iter(
                 regions_window.iter().filter(|r| **r != -1).copied(),
@@ -129,13 +130,12 @@ pub fn solve(input: &str) -> usize {
                     continue;
                 }
 
-                if corner_in_window(&chars_window, region.symbol) {
-                    region.corners += 1;
-                }
+                region.corners += corner_in_window(&regions_window, *region_index) as usize;
             }
         }
     }
 
+    println!("{:#?}", regions);
     regions.iter().map(|r| r.area * r.corners).sum()
 }
 

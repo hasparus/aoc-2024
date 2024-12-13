@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use std::fmt::Display;
 use std::ops::Index;
 
 #[derive(Debug)]
@@ -59,6 +58,7 @@ impl<T> Grid<T> {
             && col.try_into().expect("col conversion failed") < self.width as isize
     }
 
+    #[allow(dead_code)]
     pub fn cells(&self) -> impl Iterator<Item = (isize, isize, &T)> {
         (0..self.height).flat_map(move |row| {
             (0..self.width).map(move |col| (row as isize, col as isize, &self.data[row][col]))

@@ -31,7 +31,7 @@ fn corner_in_window(window: &[isize; 4], region_symbol: isize) -> u8 {
 
     0
 }
-
+    
 #[derive(Debug, PartialEq, Eq)]
 struct Region {
     symbol: char,
@@ -135,7 +135,6 @@ pub fn solve(input: &str) -> usize {
         }
     }
 
-    println!("{:#?}", regions);
     regions.iter().map(|r| r.area * r.corners).sum()
 }
 

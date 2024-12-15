@@ -1,18 +1,18 @@
-#[derive(Debug, parse_display::Display, parse_display::FromStr)]
+#[derive(Debug, parse_display::Display, parse_display::FromStr, Clone)]
 #[display("X{x}, Y{y}")]
 pub struct ButtonPress {
-    pub x: u32,
-    pub y: u32,
+    pub x: i64,
+    pub y: i64,
 }
 
-#[derive(Debug, parse_display::Display, parse_display::FromStr)]
+#[derive(Debug, parse_display::Display, parse_display::FromStr, Clone)]
 #[display("X={x}, Y={y}")]
 pub struct Prize {
-    pub x: u32,
-    pub y: u32,
+    pub x: i64,
+    pub y: i64,
 }
 
-#[derive(Debug, parse_display::Display, parse_display::FromStr)]
+#[derive(Debug, parse_display::Display, parse_display::FromStr, Clone)]
 #[display("Button A: {button_a}\nButton B: {button_b}\nPrize: {prize}")]
 pub struct GameRound {
     pub button_a: ButtonPress,
@@ -20,9 +20,13 @@ pub struct GameRound {
     pub prize: Prize,
 }
 
+#[derive(Debug, Clone)]
 pub struct Game {
     pub rounds: Vec<GameRound>,
 }
+
+pub static A_PRESS_COST: i64 = 3;
+pub static B_PRESS_COST: i64 = 1;
 
 impl std::str::FromStr for Game {
     type Err = std::string::ParseError;

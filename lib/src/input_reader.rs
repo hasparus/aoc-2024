@@ -19,7 +19,6 @@ pub struct InputsFile {
 }
 
 impl InputsFile {
-    #[cfg(test)]
     pub fn get_input(&self, name: &str) -> &Input {
         self.sections
             .iter()

@@ -1,10 +1,10 @@
-type BoardSize = { width: number; height: number };
-type Vector2 = { x: number; y: number };
-type Position = Vector2;
-type Velocity = Vector2;
-type RobotState = { position: Position; velocity: Velocity };
+export type BoardSize = { width: number; height: number };
+export type Vector2 = { x: number; y: number };
+export type Position = Vector2;
+export type Velocity = Vector2;
+export type RobotState = { position: Position; velocity: Velocity };
 
-function parseInput(input: string): RobotState[] {
+export function parseInput(input: string): RobotState[] {
   return input
     .trim()
     .split("\n")
@@ -92,4 +92,6 @@ async function main() {
   console.log(solve(input, { width: 101, height: 103 }));
 }
 
-main();
+if (import.meta.main) {
+  main();
+}

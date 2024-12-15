@@ -1,7 +1,7 @@
 pub const WIDTH: usize = 101;
 pub const HEIGHT: usize = 103;
 pub const UNIQUE_BOARDS: usize = WIDTH * HEIGHT;
-pub const MAX_STORED_BOARDS: usize = 20;
+pub const MAX_STORED_BOARDS: usize = 100;
 
 #[derive(Clone, Debug)]
 pub struct Position {
@@ -38,12 +38,37 @@ pub struct Game {
 impl Game {
     pub fn new(input: &str) -> Self {
         let robots = parse_input(input);
-        Self {
+        let mut game = Self {
             robots,
             current_time: 0,
             lowest_entropy_states: Vec::with_capacity(MAX_STORED_BOARDS),
             selected_state_idx: std::cell::Cell::new(None),
+        };
+
+        // Precompute all states
+        for time in 0..UNIQUE_BOARDS {
+            if time % 1000 == 0 {
+                print!("\x1B[2J\x1B[1;1H");
+                println!("Processing time: {}", time);
+            }
+
+            let board = process_time(&game.robots, time);
+            let entropy = calculate_entropy(&board);
+
+            if entropy <= 2.7 {
+                let state = BoardState {
+                    board,
+                    entropy,
+                    time,
+                };
+                game.update_lowest_entropy_states(state);
+            }
         }
+
+        // Clear the progress messages before starting UI
+        print!("\x1B[2J\x1B[1;1H");
+
+        game
     }
 
     pub fn current_board(&self) -> Vec<Vec<u32>> {
@@ -53,31 +78,31 @@ impl Game {
     pub fn calculate_safety_factor_for_board(&self, board: &[Vec<u32>]) -> u32 {
         let mid_x = WIDTH / 2;
         let mid_y = HEIGHT / 2;
-        
+
         let mut quadrants = [0u32; 4]; // top_left, top_right, bottom_left, bottom_right
-        
+
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
                 if x == mid_x || y == mid_y {
                     continue;
                 }
-                
+
                 let count = board[y][x];
                 if count == 0 {
                     continue;
                 }
-                
+
                 let quad_idx = match (x > mid_x, y > mid_y) {
                     (false, false) => 0, // top left
                     (true, false) => 1,  // top right
                     (false, true) => 2,  // bottom left
                     (true, true) => 3,   // bottom right
                 };
-                
+
                 quadrants[quad_idx] += count;
             }
         }
-        
+
         quadrants.iter().product()
     }
 
@@ -102,48 +127,17 @@ impl Game {
     }
 
     pub fn select_next_state(&self) {
-        if self.is_current_selected() {
-            if !self.lowest_entropy_states.is_empty() {
-                self.select_state(0);
-            }
-        } else {
-            let current_idx = self.selected_state_idx.get().unwrap_or(0);
-            if current_idx + 1 < self.lowest_entropy_states.len() {
-                self.select_state(current_idx + 1);
-            } else {
-                self.selected_state_idx.set(None);  // Select CURRENT
-            }
+        let current_idx = self.selected_state_idx.get().unwrap_or(0);
+        if current_idx + 1 < self.lowest_entropy_states.len() {
+            self.select_state(current_idx + 1);
         }
     }
 
     pub fn select_prev_state(&self) {
-        if self.is_current_selected() {
-            if let Some(last_idx) = self.lowest_entropy_states.len().checked_sub(1) {
-                self.select_state(last_idx);
-            }
-        } else {
-            let current_idx = self.selected_state_idx.get().unwrap_or(0);
-            if current_idx > 0 {
-                self.select_state(current_idx - 1);
-            } else {
-                self.selected_state_idx.set(None);  // Select CURRENT
-            }
+        let current_idx = self.selected_state_idx.get().unwrap_or(0);
+        if current_idx > 0 {
+            self.select_state(current_idx - 1);
         }
-    }
-
-    pub fn update(&mut self) -> bool {
-        let board = process_time(&self.robots, self.current_time);
-        let entropy = calculate_entropy(&board);
-
-        let state = BoardState {
-            board,
-            entropy,
-            time: self.current_time,
-        };
-
-        self.update_lowest_entropy_states(state);
-        self.current_time += 1;
-        true
     }
 
     fn update_lowest_entropy_states(&mut self, state: BoardState) {
@@ -165,12 +159,8 @@ impl Game {
     }
 
     pub fn is_time_selected(&self, time: usize) -> bool {
-        if self.is_current_selected() {
-            time == self.current_time
-        } else {
-            self.selected_state()
-                .map_or(false, |state| state.time == time)
-        }
+        self.selected_state()
+            .map_or(false, |state| state.time == time)
     }
 }
 

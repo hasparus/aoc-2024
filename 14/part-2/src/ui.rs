@@ -50,134 +50,120 @@ impl Ui {
     }
 
     pub fn run(&mut self, mut game: Game) -> Result<()> {
+        // Initial UI draw
+        self.draw_ui(&game)?;
+
         loop {
-            self.terminal.draw(|frame| {
-                let area = frame.size();
-                let layout = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints([
-                        Constraint::Length(3), // stats
-                        Constraint::Min(0),    // boards
-                        Constraint::Length(3), // metrics
-                        Constraint::Length(3), // stored states navigation
-                    ])
-                    .split(area);
-
-                // Stats section
-                let lowest_entropy_state = game.lowest_entropy_states.first();
-                let stats = format!(
-                    "Current time: {} | Best entropy: {:.6} at time: {}",
-                    game.current_time,
-                    lowest_entropy_state
-                        .map(|s| s.entropy)
-                        .unwrap_or(f64::INFINITY),
-                    lowest_entropy_state.map(|s| s.time).unwrap_or(0),
-                );
-                let stats_widget = Paragraph::new(stats)
-                    .block(Block::default().borders(Borders::ALL))
-                    .alignment(Alignment::Center);
-                frame.render_widget(stats_widget, layout[0]);
-
-                // Boards section
-                let boards = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                    .split(layout[1]);
-
-                // Left panel: Show selected state or current board if CURRENT is selected
-                if game.is_current_selected() {
-                    if game.current_entropy() <= 2.7 {
-                        render_board(&game.current_board(), frame, boards[0], "Current Board");
-                    }
-                } else if let Some(state) = game.selected_state() {
-                    render_board(
-                        &state.board,
-                        frame,
-                        boards[0],
-                        &format!("Selected Board (t={})", state.time),
-                    );
-                }
-
-                // Right panel: Always show best board
-                if let Some(state) = game.lowest_entropy_states.first() {
-                    render_board(
-                        &state.board,
-                        frame,
-                        boards[1],
-                        &format!("Best Board (t={})", state.time),
-                    );
-                }
-
-                // Metrics section - show metrics for selected state
-                let metrics = if game.is_current_selected() {
-                    format!(
-                        "Entropy: {:.6} | Safety Factor: {}",
-                        game.current_entropy(),
-                        game.calculate_safety_factor()
-                    )
-                } else if let Some(state) = game.selected_state() {
-                    format!(
-                        "Entropy: {:.6} | Safety Factor: {}",
-                        state.entropy,
-                        game.calculate_safety_factor_for_board(&state.board)
-                    )
-                } else {
-                    String::from("No state selected")
-                };
-
-                let metrics_widget = Paragraph::new(metrics)
-                    .block(Block::default().borders(Borders::ALL))
-                    .alignment(Alignment::Center);
-                frame.render_widget(metrics_widget, layout[2]);
-
-                // Navigation list
-                let mut nav_items = vec![];
-                if game.current_entropy() <= 2.7 {
-                    nav_items.push((
-                        String::from("CURRENT"),
-                        game.current_time,
-                        game.current_entropy(),
-                    ));
-                }
-                nav_items.extend(
-                    game.lowest_entropy_states
-                        .iter()
-                        .map(|s| (format!("t={}", s.time), s.time, s.entropy)),
-                );
-
-                let nav_text = nav_items
-                    .iter()
-                    .map(|(label, time, _entropy)| {
-                        if game.is_time_selected(*time) {
-                            format!("[\x1b[34m{}\x1b[0m]", label)
-                        } else {
-                            format!("[{}]", label)
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
-                let nav_widget = Paragraph::new(nav_text)
-                    .block(Block::default().borders(Borders::ALL))
-                    .alignment(Alignment::Left);
-                frame.render_widget(nav_widget, layout[3]);
-            })?;
-
-            if !game.update() {
-                continue;
-            }
-
-            if event::poll(std::time::Duration::from_millis(10))? {
+            if event::poll(std::time::Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Left => game.select_prev_state(),
-                        KeyCode::Right => game.select_next_state(),
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Left => {
+                            game.select_prev_state();
+                            self.draw_ui(&game)?;
+                        }
+                        KeyCode::Right => {
+                            game.select_next_state();
+                            self.draw_ui(&game)?;
+                        }
                         _ => {}
                     }
                 }
             }
         }
+    }
+
+    fn draw_ui(&mut self, game: &Game) -> Result<()> {
+        self.terminal.draw(|frame| {
+            let area = frame.size();
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(3), // stats
+                    Constraint::Min(0),    // boards
+                    Constraint::Length(3), // metrics
+                    Constraint::Length(3), // stored states navigation
+                ])
+                .split(area);
+
+            // Stats section
+            let lowest_entropy_state = game.lowest_entropy_states.first();
+            let stats = format!(
+                "Current time: {} | Best entropy: {:.6} at time: {}",
+                game.current_time,
+                lowest_entropy_state
+                    .map(|s| s.entropy)
+                    .unwrap_or(f64::INFINITY),
+                lowest_entropy_state.map(|s| s.time).unwrap_or(0),
+            );
+            let stats_widget = Paragraph::new(stats)
+                .block(Block::default().borders(Borders::ALL))
+                .alignment(Alignment::Center);
+            frame.render_widget(stats_widget, layout[0]);
+
+            // Boards section
+            let boards = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(layout[1]);
+
+            // Left panel: Show selected state
+            if let Some(state) = game.selected_state() {
+                render_board(
+                    &state.board,
+                    frame,
+                    boards[0],
+                    &format!("Selected Board (t={})", state.time),
+                );
+            }
+
+            // Right panel: Always show best board
+            if let Some(state) = game.lowest_entropy_states.first() {
+                render_board(
+                    &state.board,
+                    frame,
+                    boards[1],
+                    &format!("Best Board (t={})", state.time),
+                );
+            }
+
+            // Metrics section - show metrics for selected state
+            let metrics = if let Some(state) = game.selected_state() {
+                format!(
+                    "Entropy: {:.6} | Safety Factor: {}",
+                    state.entropy,
+                    game.calculate_safety_factor_for_board(&state.board)
+                )
+            } else {
+                String::from("No state selected")
+            };
+
+            let metrics_widget = Paragraph::new(metrics)
+                .block(Block::default().borders(Borders::ALL))
+                .alignment(Alignment::Center);
+            frame.render_widget(metrics_widget, layout[2]);
+
+            // Navigation list
+            let nav_text = game
+                .lowest_entropy_states
+                .iter()
+                .map(|s| {
+                    let label = format!("t={:>5}", s.time);
+                    if game.is_time_selected(s.time) {
+                        format!("[\x1b[34m{} ({:.6})\x1b[0m]", label, s.entropy)
+                    } else {
+                        format!("[{} ({:.6})]", label, s.entropy)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            let nav_widget = Paragraph::new(nav_text)
+                .block(Block::default().borders(Borders::ALL))
+                .alignment(Alignment::Left)
+                .wrap(ratatui::widgets::Wrap { trim: true });
+            frame.render_widget(nav_widget, layout[3]);
+        })?;
         Ok(())
     }
 

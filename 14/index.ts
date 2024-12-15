@@ -55,6 +55,13 @@ function solve(input: string, { width, height }: BoardSize) {
   }
 
   // count the number of robots in each quadrant
+  return getSafetyScore(robots, { width, height });
+}
+
+export function getSafetyScore(
+  robots: RobotState[],
+  { width, height }: BoardSize
+) {
   const quadrants = {
     topLeft: 0,
     topRight: 0,
@@ -65,14 +72,14 @@ function solve(input: string, { width, height }: BoardSize) {
   const midX = Math.floor(width / 2);
   const midY = Math.floor(height / 2);
 
-  for (const robot of robots) {
-    if (robot.position.x < midX && robot.position.y < midY) {
+  for (const { position } of robots) {
+    if (position.x < midX && position.y < midY) {
       quadrants.topLeft++;
-    } else if (robot.position.x < midX && robot.position.y > midY) {
+    } else if (position.x < midX && position.y > midY) {
       quadrants.bottomLeft++;
-    } else if (robot.position.x > midX && robot.position.y < midY) {
+    } else if (position.x > midX && position.y < midY) {
       quadrants.topRight++;
-    } else if (robot.position.x > midX && robot.position.y > midY) {
+    } else if (position.x > midX && position.y > midY) {
       quadrants.bottomRight++;
     } else {
       // robots in the middle don't count

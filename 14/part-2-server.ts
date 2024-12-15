@@ -1,10 +1,15 @@
-import { type BoardSize, type RobotState, parseInput } from "./index";
+import {
+  type BoardSize,
+  type RobotState,
+  getSafetyScore,
+  parseInput,
+} from "./index";
 
 const WIDTH = 101;
 const HEIGHT = 103;
 
 const UNIQUE_BOARDS = WIDTH * HEIGHT;
-const MAX_ENTROPY = 0.265;
+const MAX_ENTROPY = 0.28;
 
 function createHtmlBoard(robots: RobotState[], { width, height }: BoardSize) {
   return `
@@ -111,67 +116,67 @@ function createHtmlBoard(robots: RobotState[], { width, height }: BoardSize) {
             ctx.putImageData(imageData, 0, 0);
           }
 
-          function processTime(time) {
-            const positions = Array.from({ length: height }, () => new Array(width).fill(0));
-            const currentRobots = JSON.parse(JSON.stringify(robots));
-            
-            for (let t = 0; t < time; t++) {
-              for (const robot of currentRobots) {
-                robot.position.x = (robot.position.x + robot.velocity.x + width) % width;
-                robot.position.y = (robot.position.y + robot.velocity.y + height) % height;
-              }
-            }
-
-            for (const robot of currentRobots) {
-              positions[robot.position.y][robot.position.x]++;
-            }
-
-            return positions;
-          }
-
-          function createBoard(time) {
-            const positions = processTime(time);
-            const entropy = calculateEntropy(positions);
-            
-            if (entropy > ${MAX_ENTROPY}) return null;
-
-            const container = document.createElement('div');
-            container.className = 'board-container';
-            container.title = \`t=\${time} entropy=\${entropy.toFixed(3)}\`;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            canvas.className = 'board';
-            
-            container.appendChild(canvas);
-            renderBoard(canvas, positions);
-            return container;
-          }
-
-          let currentTime = 0;
+          const getSafetyScore = ${getSafetyScore.toString()};
+          
+          let time = 0;
+          const robotState = JSON.parse(JSON.stringify(robots));
           const container = document.getElementById('boards');
 
-          function addMoreBoards() {
-            const fragment = document.createDocumentFragment();
+          // we could use https://en.wikipedia.org/wiki/Chinese_remainder_theorem
+          // to find the time, but this is easier
+          // I'll admit I found the Christmas Tree first just looking at low entropy boards.
+          const isInteresting = (time) => {
+            return ((time - 10) % 101) === 0 || ((time - 64) % 103) === 0
+          };
+
+          function addBoards() {
             let added = 0;
-            
-            while (added < 10 && currentTime < ${UNIQUE_BOARDS}) {
-              const board = createBoard(currentTime++);
+
+            function createBoard() {
+              const positions = Array.from({ length: height }, () => new Array(width).fill(0));
+              
+              for (const robot of robotState) {
+                robot.position.x = (robot.position.x + robot.velocity.x + width) % width;
+                robot.position.y = (robot.position.y + robot.velocity.y + height) % height;
+                positions[robot.position.y][robot.position.x]++;
+              }
+              
+              const entropy = calculateEntropy(positions);
+              if (entropy > ${MAX_ENTROPY} || !isInteresting(time)) return null;
+
+              const container = document.createElement('div');
+              container.className = 'board-container';
+              container.title = [
+                "t=" + time,
+                "entropy=" + entropy.toFixed(3),
+                "safety=" + getSafetyScore(robotState, { width, height }),
+              ].join(" ");
+              
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              canvas.className = 'board';
+              
+              container.appendChild(canvas);
+              renderBoard(canvas, positions);
+              return container;
+            }
+
+            while (added < 10 && time < ${UNIQUE_BOARDS}) {
+              const board = createBoard();
               if (board) {
-                fragment.appendChild(board);
+                container.appendChild(board);
                 added++;
               }
+              time++;
             }
             
-            container.appendChild(fragment);
-            
-            if (currentTime < ${UNIQUE_BOARDS}) {
-              requestAnimationFrame(addMoreBoards);
+            if (time < ${UNIQUE_BOARDS}) {
+              requestAnimationFrame(addBoards);
             }
           }
 
-          addMoreBoards();
+          addBoards();
         </script>
       </body>
     </html>

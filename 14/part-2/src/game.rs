@@ -55,7 +55,7 @@ impl Game {
             let board = process_time(&game.robots, time);
             let entropy = calculate_entropy(&board);
 
-            if entropy <= 2.7 {
+            if entropy <= 2.8 {
                 let state = BoardState {
                     board,
                     entropy,

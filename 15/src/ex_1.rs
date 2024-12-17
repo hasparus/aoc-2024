@@ -1,13 +1,16 @@
-use crate::{parse_input::*, point2::Point2};
+use aoc_2024_lib::board::Board;
+use aoc_2024_lib::point2::Point2;
+
+use crate::parse_input::{Direction, Input, Token};
 
 pub fn solve(input: &Input) -> usize {
     let map = move_robot(input);
     sum_up_coordinates(&map)
 }
 
-fn move_robot(input: &Input) -> Map {
+fn move_robot(input: &Input) -> Board<Token> {
     let mut map = input.map.clone();
-    let mut robot_pos = find_robot(input);
+    let mut robot_pos = map.find(&Token::Robot);
 
     for direction in input.moves.iter() {
         if let Some(new_pos) = move_object(&mut map, &robot_pos, direction) {
@@ -18,7 +21,7 @@ fn move_robot(input: &Input) -> Map {
     map
 }
 
-fn move_object(map: &mut Map, pos: &Point2, direction: &Direction) -> Option<Point2> {
+fn move_object(map: &mut Board<Token>, pos: &Point2, direction: &Direction) -> Option<Point2> {
     let current = map[pos];
 
     // the wall is not movable
@@ -43,7 +46,7 @@ fn move_object(map: &mut Map, pos: &Point2, direction: &Direction) -> Option<Poi
     }
 }
 
-fn cell_in_direction(pos: &Point2, direction: &Direction) -> Point2 {
+pub fn cell_in_direction(pos: &Point2, direction: &Direction) -> Point2 {
     let new_pos = match direction {
         Direction::Up => Point2::new(pos.row - 1, pos.col),
         Direction::Down => Point2::new(pos.row + 1, pos.col),
@@ -54,19 +57,7 @@ fn cell_in_direction(pos: &Point2, direction: &Direction) -> Point2 {
     new_pos
 }
 
-fn find_robot(input: &Input) -> Point2 {
-    for (i, row) in input.map.iter().enumerate() {
-        for (j, token) in row.iter().enumerate() {
-            if token == &Token::Robot {
-                return Point2::new(i, j);
-            }
-        }
-    }
-
-    panic!("Robot not found");
-}
-
-fn sum_up_coordinates(map: &Map) -> usize {
+fn sum_up_coordinates(map: &Board<Token>) -> usize {
     let mut sum = 0;
     for (i, row) in map.iter().enumerate() {
         for (j, token) in row.iter().enumerate() {
@@ -80,6 +71,7 @@ fn sum_up_coordinates(map: &Map) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use crate::parse_input::parse_input;
     use aoc_2024_lib::input_reader::read_input;
     use pretty_assertions::assert_eq;
 
@@ -124,7 +116,7 @@ mod tests {
                 #...O..
                 #..@...
             "
-            .parse::<Map>()?
+            .parse::<Board<Token>>()?
         );
 
         Ok(())
@@ -151,7 +143,7 @@ mod tests {
                 #...@O.
                 #......
             "
-            .parse::<Map>()?
+            .parse::<Board<Token>>()?
         );
 
         Ok(())
@@ -180,7 +172,7 @@ mod tests {
                 #......
                 #......
             "
-            .parse::<Map>()?
+            .parse::<Board<Token>>()?
         );
 
         Ok(())

@@ -140,9 +140,8 @@ pub fn parse_input(input: &str) -> Result<Input, Box<dyn std::error::Error>> {
 
     let (map, moves) = trimmed.split_at(separator);
 
-    let moves = moves[1];
-
     let moves: Vec<Direction> = moves
+        .join("")
         .chars()
         .map(|c| {
             c.to_string()

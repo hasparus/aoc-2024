@@ -1,5 +1,10 @@
 use crate::{parse_input::*, point2::Point2};
 
+pub fn solve(input: &Input) -> usize {
+    let map = move_robot(input);
+    sum_up_coordinates(&map)
+}
+
 fn move_robot(input: &Input) -> Map {
     let mut map = input.map.clone();
     let mut robot_pos = find_robot(input);
@@ -75,6 +80,9 @@ fn sum_up_coordinates(map: &Map) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use aoc_2024_lib::input_reader::read_input;
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]
@@ -174,6 +182,55 @@ mod tests {
             "
             .parse::<Map>()?
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex_1_small() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+
+        let small = input_file.get_input("Small");
+
+        assert_eq!(solve(&parse_input(&small.content)?), 2028);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex_1_large_looks_as_expected() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+
+        let map = move_robot(&parse_input(&input_file.get_input("Large").content)?);
+
+        assert_eq!(
+            map.to_string().trim(),
+            "
+                ##########
+                #.O.O.OOO#
+                #........#
+                #OO......#
+                #OO@.....#
+                #O#.....O#
+                #O.....OO#
+                #O.....OO#
+                #OO....OO#
+                ##########
+            "
+            .trim()
+            .replace(" ", "")
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex_1_large() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+
+        let example = input_file.get_input("Large");
+
+        assert_eq!(solve(&parse_input(&example.content)?), 10092);
 
         Ok(())
     }

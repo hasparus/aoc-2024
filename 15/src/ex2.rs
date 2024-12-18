@@ -420,6 +420,50 @@ mod tests {
     }
 
     #[test]
+    fn test_pushing_tree_of_boxes_interrupted() -> Result<(), Box<dyn std::error::Error>> {
+        let map = "
+            #################
+            ##.............##
+            ##........#....##
+            ##.............##
+            ##..[][]..[][].##
+            ##...[]....[]..##
+            ##..[]..[][]...##
+            ##...[]..[]....##
+            ##....[][].....##
+            ##.....[]......##
+            ##......@......##
+        "
+        .parse::<Board<UpscaledToken>>()?;
+
+        let map = move_robot(
+            &map,
+            &[Direction::Up, Direction::Up, Direction::Up, Direction::Up],
+        );
+
+        assert_eq!(
+            map.to_string().trim(),
+            "
+                #################
+                ##.............##
+                ##........#....##
+                ##..[][]..[][].##
+                ##...[]....[]..##
+                ##..[]..[][]...##
+                ##...[]..[]....##
+                ##....[][].....##
+                ##.....[]......##
+                ##......@......##
+                ##.............##
+            "
+            .trim()
+            .replace(" ", "")
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn test_pushing_cross_of_boxes() -> Result<(), Box<dyn std::error::Error>> {
         let map = "
             ##########

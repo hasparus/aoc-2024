@@ -1,4 +1,4 @@
-use crate::{ex_1::cell_in_direction, parse_input::*};
+use crate::{ex1::cell_in_direction, parse_input::*};
 use aoc_2024_lib::{board::Board, point2::Point2};
 use parse_display::{Display, FromStr};
 
@@ -58,10 +58,15 @@ fn move_object(
     direction: &Direction,
 ) -> Option<Point2> {
     let current = map[pos];
+    println!("Moving {} at {:?}", current, pos);
+
+    if current == UpscaledToken::Wall {
+        return None;
+    }
+
     let new_pos = cell_in_direction(pos, direction);
 
     match current {
-        UpscaledToken::Wall => None,
         UpscaledToken::Empty => Some(*pos),
         UpscaledToken::Robot => {
             if move_object(map, &new_pos, direction).is_some() {
@@ -80,13 +85,16 @@ fn move_object(
 
             let new_right_pos = new_pos + (0, 1).into();
 
-            if move_object(map, &new_pos, direction).is_some()
-                && if new_pos == right_pos {
-                    true
+            if new_pos == right_pos {
+                if move_object(map, &new_right_pos, direction).is_some() {
+                    map[new_right_pos] = UpscaledToken::BoxRight;
+                    map[new_pos] = UpscaledToken::BoxLeft;
+                    map[pos] = UpscaledToken::Empty;
+                    Some(new_pos)
                 } else {
-                    move_object(map, &new_right_pos, direction).is_some()
+                    None
                 }
-            {
+            } else if move_object(map, &new_pos, direction).is_some() {
                 map[new_pos] = UpscaledToken::BoxLeft;
                 map[new_right_pos] = UpscaledToken::BoxRight;
                 map[pos] = UpscaledToken::Empty;
@@ -99,27 +107,18 @@ fn move_object(
         UpscaledToken::BoxRight => {
             let left_pos = *pos - (0, 1).into();
             if map[left_pos] != UpscaledToken::BoxLeft {
-                panic!("Box right without box left\n{}", map);
+                panic!(
+                    "Box right without box left. Found {} instead.",
+                    map[left_pos]
+                );
             }
 
-            let new_left_pos = new_pos - (0, 1).into();
-
-            if move_object(map, &new_pos, direction).is_some()
-                && if new_pos == left_pos {
-                    true
-                } else {
-                    move_object(map, &new_left_pos, direction).is_some()
-                }
-            {
+            move_object(map, &left_pos, direction).map(|_| {
                 map[new_pos] = UpscaledToken::BoxRight;
-                map[new_left_pos] = UpscaledToken::BoxLeft;
-                map[pos] = UpscaledToken::Empty;
-                map[left_pos] = UpscaledToken::Empty;
-                Some(new_pos)
-            } else {
-                None
-            }
+                new_pos
+            })
         }
+        _ => panic!("Wall must be handled first before computing new_pos."),
     }
 }
 
@@ -169,7 +168,69 @@ mod tests {
     }
 
     #[test]
-    fn test_ex_2_large() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_move_robot_pushing_box() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                #@O.
+
+                >>
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map,
+            "
+                ##..@[].
+            "
+            .parse::<Board<UpscaledToken>>()?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_move_robot_pushing_box_into_wall() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                #######
+                #......
+                #.O....
+                #.@....
+
+                ^^^^^^>>^<<<<
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map,
+            "
+                ##############
+                ##[]@.........
+                ##............
+                ##............
+            "
+            .parse::<Board<UpscaledToken>>()?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex2_small() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+        let example = input_file.get_input("Small");
+        assert_eq!(solve(&parse_input(&example.content)?), 1751);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex2_large() -> Result<(), Box<dyn std::error::Error>> {
         let input_file = read_input("./inputs.md")?;
         let example = input_file.get_input("Large");
         assert_eq!(solve(&parse_input(&example.content)?), 9021);

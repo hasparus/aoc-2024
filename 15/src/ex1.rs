@@ -47,14 +47,12 @@ fn move_object(map: &mut Board<Token>, pos: &Point2, direction: &Direction) -> O
 }
 
 pub fn cell_in_direction(pos: &Point2, direction: &Direction) -> Point2 {
-    let new_pos = match direction {
+    match direction {
         Direction::Up => Point2::new(pos.row - 1, pos.col),
         Direction::Down => Point2::new(pos.row + 1, pos.col),
         Direction::Left => Point2::new(pos.row, pos.col - 1),
         Direction::Right => Point2::new(pos.row, pos.col + 1),
-    };
-
-    new_pos
+    }
 }
 
 fn sum_up_coordinates(map: &Board<Token>) -> usize {
@@ -179,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ex_1_small() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_ex1_small() -> Result<(), Box<dyn std::error::Error>> {
         let input_file = read_input("./inputs.md")?;
 
         let small = input_file.get_input("Small");
@@ -190,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ex_1_large_looks_as_expected() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_ex1_large_looks_as_expected() -> Result<(), Box<dyn std::error::Error>> {
         let input_file = read_input("./inputs.md")?;
 
         let map = move_robot(&parse_input(&input_file.get_input("Large").content)?);
@@ -217,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ex_1_large() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_ex1_large() -> Result<(), Box<dyn std::error::Error>> {
         let input_file = read_input("./inputs.md")?;
 
         let example = input_file.get_input("Large");

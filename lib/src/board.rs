@@ -72,13 +72,15 @@ where
         let tokens = lines
             .iter()
             .filter(|line| !line.trim().is_empty())
-            .map(|line| {
+            .enumerate()
+            .map(|(line_number, line)| {
                 line.trim()
                     .chars()
-                    .map(|c| {
-                        c.to_string()
-                            .parse::<T>()
-                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                    .enumerate()
+                    .map(|(column, c)| {
+                        c.to_string().parse::<T>().map_err(|e| {
+                            format!("failed to parse token `{c}` at {line_number}:{column}: {e}")
+                        })
                     })
                     .collect::<Result<Vec<_>, _>>()
             })

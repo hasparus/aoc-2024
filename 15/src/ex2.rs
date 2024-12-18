@@ -47,9 +47,34 @@ fn move_robot(map: &Board<UpscaledToken>, moves: &[Direction]) -> Board<Upscaled
         if let Some(new_pos) = move_object(&mut map, &robot_pos, direction) {
             robot_pos = new_pos;
         }
+
+        if cfg!(debug_assertions) {
+            println!("{}", map);
+        }
+
+        debug_assert!(check_box_integrity(&map));
     }
 
     map
+}
+
+fn check_box_integrity(map: &Board<UpscaledToken>) -> bool {
+    for (i, row) in map.iter().enumerate() {
+        for (j, token) in row.iter().enumerate() {
+            if token == &UpscaledToken::BoxLeft
+                && map[Point2::new(i, j + 1)] != UpscaledToken::BoxRight
+            {
+                eprintln!("Box left at ({}, {}) without box right", i, j);
+                return false;
+            } else if token == &UpscaledToken::BoxRight
+                && map[Point2::new(i, j - 1)] != UpscaledToken::BoxLeft
+            {
+                eprintln!("Box right at ({}, {}) without box left", i, j);
+                return false;
+            }
+        }
+    }
+    true
 }
 
 fn move_object(
@@ -58,7 +83,6 @@ fn move_object(
     direction: &Direction,
 ) -> Option<Point2> {
     let current = map[pos];
-    println!("Moving {} at {:?}", current, pos);
 
     if current == UpscaledToken::Wall {
         return None;
@@ -87,18 +111,21 @@ fn move_object(
 
             if new_pos == right_pos {
                 if move_object(map, &new_right_pos, direction).is_some() {
+                    map[pos] = UpscaledToken::Empty;
                     map[new_right_pos] = UpscaledToken::BoxRight;
                     map[new_pos] = UpscaledToken::BoxLeft;
-                    map[pos] = UpscaledToken::Empty;
                     Some(new_pos)
                 } else {
                     None
                 }
-            } else if move_object(map, &new_pos, direction).is_some() {
-                map[new_pos] = UpscaledToken::BoxLeft;
-                map[new_right_pos] = UpscaledToken::BoxRight;
+            } else if move_object(map, &new_pos, direction).is_some()
+                && (direction != &Direction::Left
+                    && move_object(map, &new_right_pos, direction).is_some())
+            {
                 map[pos] = UpscaledToken::Empty;
                 map[right_pos] = UpscaledToken::Empty;
+                map[new_pos] = UpscaledToken::BoxLeft;
+                map[new_right_pos] = UpscaledToken::BoxRight;
                 Some(new_pos)
             } else {
                 None
@@ -113,10 +140,8 @@ fn move_object(
                 );
             }
 
-            move_object(map, &left_pos, direction).map(|_| {
-                map[new_pos] = UpscaledToken::BoxRight;
-                new_pos
-            })
+            // box left drives, box right follows
+            move_object(map, &left_pos, direction).map(|_| new_pos)
         }
         _ => panic!("Wall must be handled first before computing new_pos."),
     }
@@ -225,7 +250,7 @@ mod tests {
     fn test_ex2_small() -> Result<(), Box<dyn std::error::Error>> {
         let input_file = read_input("./inputs.md")?;
         let example = input_file.get_input("Small");
-        assert_eq!(solve(&parse_input(&example.content)?), 1751);
+        assert_eq!(solve(&parse_input(&example.content)?), 1751); // this is probably wrong
         Ok(())
     }
 
@@ -236,4 +261,158 @@ mod tests {
         assert_eq!(solve(&parse_input(&example.content)?), 9021);
         Ok(())
     }
+
+    #[test]
+    fn test_push_box_right() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                #@O.#
+                #####
+
+                >>
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map,
+            "
+                ##..@[].##
+                ##########
+            "
+            .parse::<Board<UpscaledToken>>()?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_push_box_left() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                #.O@#
+                #####
+
+                <
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map.to_string().trim(),
+            "
+                ##.[]@..##
+                ##########
+            "
+            .trim()
+            .replace(" ", "")
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_push_box_up() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                ###
+                #.#
+                #O#
+                #@#
+                ###
+
+                ^
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map,
+            "
+                ######
+                ##[]##
+                ##@.##
+                ##..##
+                ######
+            "
+            .parse::<Board<UpscaledToken>>()?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_push_box_down() -> Result<(), Box<dyn std::error::Error>> {
+        let input = parse_input(
+            "
+                #@#
+                #O#
+                #.#
+                ###
+
+                v
+            ",
+        )?;
+
+        let map = upscale_map(&input.map);
+        let map = move_robot(&map, &input.moves);
+
+        assert_eq!(
+            map,
+            "
+                ##..##
+                ##@.##
+                ##[]##
+                ######
+            "
+            .parse::<Board<UpscaledToken>>()?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_pushing_tree_of_boxes() -> Result<(), Box<dyn std::error::Error>> {
+        let map = "
+            #################
+            ##.............##
+            ##..[][]..[][].##
+            ##...[]....[]..##
+            ##..[]..[][]...##
+            ##...[]..[]....##
+            ##....[][].....##
+            ##.....[]......##
+            ##......@......##
+        "
+        .parse::<Board<UpscaledToken>>()?;
+
+        let map = move_robot(&map, &[Direction::Up]);
+
+        assert_eq!(
+            map.to_string().trim(),
+            "
+                #################
+                ##..[][]..[][].##
+                ##...[]....[]..##
+                ##..[]..[][]...##
+                ##...[]..[]....##
+                ##....[][].....##
+                ##.....[]......##
+                ##......@......##
+                ##.............##
+            "
+            .trim()
+            .replace(" ", "")
+        );
+
+        Ok(())
+    }
+
+    
 }

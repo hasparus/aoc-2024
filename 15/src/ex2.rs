@@ -44,7 +44,8 @@ fn move_robot(map: &Board<UpscaledToken>, moves: &[Direction]) -> Board<Upscaled
     let mut robot_pos = map.find(&UpscaledToken::Robot);
 
     for direction in moves.iter() {
-        if let Some(new_pos) = move_object(&mut map, &robot_pos, direction) {
+        if let Some(new_pos) = move_object(&mut map, &robot_pos, direction, Mode::DryRun) {
+            move_object(&mut map, &robot_pos, direction, Mode::Mutate);
             robot_pos = new_pos;
         }
 
@@ -78,10 +79,21 @@ fn check_box_integrity(map: &Board<UpscaledToken>) -> bool {
     true
 }
 
+// This is so nasty, but I don't wanna deal with lifetimes today.
+// I'd have probably used `commit` lambdas or some nice immutable
+// data structure to store the map, but this is good enough, there
+// are more tasks to solve every day.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Mutate,
+    DryRun,
+}
+
 fn move_object(
     map: &mut Board<UpscaledToken>,
     pos: &Point2,
     direction: &Direction,
+    mode: Mode,
 ) -> Option<Point2> {
     let current = map[pos];
 
@@ -94,9 +106,11 @@ fn move_object(
     match current {
         UpscaledToken::Empty => Some(*pos),
         UpscaledToken::Robot => {
-            if move_object(map, &new_pos, direction).is_some() {
-                map[new_pos] = current;
-                map[pos] = UpscaledToken::Empty;
+            if move_object(map, &new_pos, direction, mode).is_some() {
+                if mode == Mode::Mutate {
+                    map[new_pos] = current;
+                    map[pos] = UpscaledToken::Empty;
+                }
                 Some(new_pos)
             } else {
                 None
@@ -111,25 +125,29 @@ fn move_object(
             let new_right_pos = new_pos + (0, 1).into();
 
             if new_pos == right_pos {
-                if move_object(map, &new_right_pos, direction).is_some() {
-                    map[pos] = UpscaledToken::Empty;
-                    map[new_right_pos] = UpscaledToken::BoxRight;
-                    map[new_pos] = UpscaledToken::BoxLeft;
+                if move_object(map, &new_right_pos, direction, mode).is_some() {
+                    if mode == Mode::Mutate {
+                        map[pos] = UpscaledToken::Empty;
+                        map[new_right_pos] = UpscaledToken::BoxRight;
+                        map[new_pos] = UpscaledToken::BoxLeft;
+                    }
                     Some(new_pos)
                 } else {
                     None
                 }
-            } else if move_object(map, &new_pos, direction).is_some()
+            } else if move_object(map, &new_pos, direction, mode).is_some()
                 && if direction != &Direction::Left {
-                    move_object(map, &new_right_pos, direction).is_some()
+                    move_object(map, &new_right_pos, direction, mode).is_some()
                 } else {
                     true
                 }
             {
-                map[pos] = UpscaledToken::Empty;
-                map[right_pos] = UpscaledToken::Empty;
-                map[new_pos] = UpscaledToken::BoxLeft;
-                map[new_right_pos] = UpscaledToken::BoxRight;
+                if mode == Mode::Mutate {
+                    map[pos] = UpscaledToken::Empty;
+                    map[right_pos] = UpscaledToken::Empty;
+                    map[new_pos] = UpscaledToken::BoxLeft;
+                    map[new_right_pos] = UpscaledToken::BoxRight;
+                }
                 Some(new_pos)
             } else {
                 None
@@ -145,7 +163,7 @@ fn move_object(
             }
 
             // box left drives, box right follows
-            move_object(map, &left_pos, direction).map(|_| new_pos)
+            move_object(map, &left_pos, direction, mode).map(|_| new_pos)
         }
         _ => panic!("Wall must be handled first before computing new_pos."),
     }

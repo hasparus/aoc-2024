@@ -49,6 +49,7 @@ fn move_robot(map: &Board<UpscaledToken>, moves: &[Direction]) -> Board<Upscaled
         }
 
         if cfg!(debug_assertions) {
+            println!("{}", direction);
             println!("{}", map);
         }
 
@@ -109,6 +110,7 @@ fn move_object(
 
             let new_right_pos = new_pos + (0, 1).into();
 
+
             if new_pos == right_pos {
                 if move_object(map, &new_right_pos, direction).is_some() {
                     map[pos] = UpscaledToken::Empty;
@@ -119,8 +121,11 @@ fn move_object(
                     None
                 }
             } else if move_object(map, &new_pos, direction).is_some()
-                && (direction != &Direction::Left
-                    && move_object(map, &new_right_pos, direction).is_some())
+                && if direction != &Direction::Left {
+                    move_object(map, &new_right_pos, direction).is_some()
+                } else {
+                    true
+                }
             {
                 map[pos] = UpscaledToken::Empty;
                 map[right_pos] = UpscaledToken::Empty;
@@ -139,6 +144,7 @@ fn move_object(
                     map[left_pos]
                 );
             }
+
 
             // box left drives, box right follows
             move_object(map, &left_pos, direction).map(|_| new_pos)
@@ -233,14 +239,15 @@ mod tests {
         let map = move_robot(&map, &input.moves);
 
         assert_eq!(
-            map,
+            map.to_string().trim(),
             "
                 ##############
                 ##[]@.........
                 ##............
                 ##............
             "
-            .parse::<Board<UpscaledToken>>()?
+            .trim()
+            .replace(" ", "")
         );
 
         Ok(())
@@ -420,6 +427,8 @@ mod tests {
             ##########
             ##......##
             ##......##
+            ##......##
+            ##......##
             ##..[]..##
             ##.[][].##
             ##..[]..##
@@ -434,6 +443,8 @@ mod tests {
             map.to_string().trim(),
             "
                 ##########
+                ##......##
+                ##......##
                 ##..[]..##
                 ##.[][].##
                 ##..[]..##
@@ -446,6 +457,14 @@ mod tests {
             .replace(" ", "")
         );
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex2_test_input_1() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+        let example = input_file.get_input("Test Input 1");
+        assert_eq!(solve(&parse_input(&example.content)?), 9796);
         Ok(())
     }
 }

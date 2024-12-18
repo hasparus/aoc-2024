@@ -110,7 +110,6 @@ fn move_object(
 
             let new_right_pos = new_pos + (0, 1).into();
 
-
             if new_pos == right_pos {
                 if move_object(map, &new_right_pos, direction).is_some() {
                     map[pos] = UpscaledToken::Empty;
@@ -144,7 +143,6 @@ fn move_object(
                     map[left_pos]
                 );
             }
-
 
             // box left drives, box right follows
             move_object(map, &left_pos, direction).map(|_| new_pos)
@@ -465,6 +463,14 @@ mod tests {
         let input_file = read_input("./inputs.md")?;
         let example = input_file.get_input("Test Input 1");
         assert_eq!(solve(&parse_input(&example.content)?), 9796);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ex2_test_input_2() -> Result<(), Box<dyn std::error::Error>> {
+        let input_file = read_input("./inputs.md")?;
+        let example = input_file.get_input("Test Input 2");
+        assert_eq!(solve(&parse_input(&example.content)?), 11042);
         Ok(())
     }
 }

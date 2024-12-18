@@ -5,9 +5,7 @@ edition = "2021"
 
 [dependencies]
 aoc-2024-lib = { path = "../lib" }
-parse-display = "0.8.2"
-pretty_assertions = "1.4.1"
-anyhow = "1.0"
+parse-display = "0.6"
 pathfinding = "4.12.0"
-
+pretty_assertions = "1.3"
 

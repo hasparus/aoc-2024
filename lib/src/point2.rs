@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Point2 {
     pub row: usize,
     pub col: usize,
@@ -43,6 +43,39 @@ impl std::ops::Sub for Point2 {
         Self {
             row: self.row - other.row,
             col: self.col - other.col,
+        }
+    }
+}
+
+impl std::ops::Add<(isize, isize)> for Point2 {
+    type Output = Self;
+
+    fn add(self, (row, col): (isize, isize)) -> Self {
+        Self {
+            row: (self.row as isize + row) as usize,
+            col: (self.col as isize + col) as usize,
+        }
+    }
+}
+
+impl std::ops::Add<&(isize, isize)> for Point2 {
+    type Output = Self;
+
+    fn add(self, (row, col): &(isize, isize)) -> Self {
+        Self {
+            row: (self.row as isize + row) as usize,
+            col: (self.col as isize + col) as usize,
+        }
+    }
+}
+
+impl std::ops::Sub<(isize, isize)> for Point2 {
+    type Output = Self;
+
+    fn sub(self, (row, col): (isize, isize)) -> Self {
+        Self {
+            row: (self.row as isize - row) as usize,
+            col: (self.col as isize - col) as usize,
         }
     }
 }

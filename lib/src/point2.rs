@@ -36,6 +36,17 @@ impl std::ops::Add for Point2 {
     }
 }
 
+impl std::ops::Add<&Point2> for &Point2 {
+    type Output = Point2;
+
+    fn add(self, other: &Point2) -> Point2 {
+        Point2 {
+            row: self.row + other.row,
+            col: self.col + other.col,
+        }
+    }
+}
+
 impl std::ops::Sub for Point2 {
     type Output = Self;
 
@@ -98,6 +109,15 @@ impl std::ops::Div<usize> for Point2 {
         Self {
             row: self.row / scalar,
             col: self.col / scalar,
+        }
+    }
+}
+
+impl From<(isize, isize)> for Point2 {
+    fn from(point: (isize, isize)) -> Self {
+        Self {
+            row: point.0 as usize,
+            col: point.1 as usize,
         }
     }
 }

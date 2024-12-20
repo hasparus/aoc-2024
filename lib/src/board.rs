@@ -114,3 +114,12 @@ impl<T: PartialEq + std::fmt::Debug> Board<T> {
         panic!("{:?} not found", searched);
     }
 }
+
+impl<T> Board<T> {
+    pub fn in_bounds(&self, point: (isize, isize)) -> bool {
+        let rows = self.0.len();
+        let cols = self.0[0].len();
+
+        point.0 >= 0 && point.0 < rows as isize && point.1 >= 0 && point.1 < cols as isize
+    }
+}

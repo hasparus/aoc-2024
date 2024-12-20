@@ -121,3 +121,18 @@ impl From<(isize, isize)> for Point2 {
         }
     }
 }
+
+impl From<Point2> for (isize, isize) {
+    fn from(point: Point2) -> Self {
+        (point.row as isize, point.col as isize)
+    }
+}
+
+impl From<&(isize, isize)> for Point2 {
+    fn from(point: &(isize, isize)) -> Self {
+        Self {
+            row: point.0 as usize,
+            col: point.1 as usize,
+        }
+    }
+}

@@ -10,8 +10,6 @@ pub enum Cell {
     Start,
     #[display("E")]
     End,
-    #[display("1")]
-    Cheat1,
-    #[display("2")]
-    Cheat2,
+    #[display("{index}")]
+    Path { index: usize },
 }

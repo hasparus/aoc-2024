@@ -302,7 +302,7 @@ mod tests {
         let by_time = group_cheats_by_time_saved(&cheats);
 
         assert_cheat_count(&board, &by_time, 2, 14);
-        // assert_cheat_count(&board, &by_time, 4, 14);
+        assert_cheat_count(&board, &by_time, 4, 14);
         assert_cheat_count(&board, &by_time, 6, 2);
         assert_cheat_count(&board, &by_time, 8, 4);
         assert_cheat_count(&board, &by_time, 10, 2);

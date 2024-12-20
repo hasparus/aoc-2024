@@ -1,5 +1,6 @@
 use crate::{cell::Cell, cheat::Cheat, parse_board::parse_board};
-use aoc_2024_lib::board::Board;
+use aoc_2024_lib::{board::Board, point2::Point2};
+use pathfinding::{matrix::directions::DIRECTIONS_4, prelude::bfs};
 use std::collections::HashMap;
 
 pub fn assert_is_cheat(is_cheat: fn(&Board<Cell>, &Cheat) -> bool, input: &str, expected: bool) {
@@ -56,15 +57,19 @@ pub fn assert_cheat_count(
 pub fn print_board_with_cheat(board: Board<Cell>, cheat: &Cheat) {
     let mut board = board.clone();
 
-    let between1 = (cheat.start + cheat.end) / 2;
-    let between2 = (between1 + cheat.end) / 2;
+    let path = bfs(
+        &cheat.start.into(),
+        |point: &(isize, isize)| {
+            DIRECTIONS_4
+                .iter()
+                .map(|dir| (point.0 + dir.0, point.1 + dir.1))
+                .collect::<Vec<_>>()
+        },
+        |point| *point == cheat.end.into(),
+    );
 
-    board[between1] = Cell::Cheat1;
-
-    if between1 == between2 {
-        board[cheat.end] = Cell::Cheat2;
-    } else {
-        board[between2] = Cell::Cheat2;
+    for (index, point) in path.unwrap().iter().enumerate().skip(1) {
+        board[Point2::from(point)] = Cell::Path { index };
     }
 
     println!("{}", board);

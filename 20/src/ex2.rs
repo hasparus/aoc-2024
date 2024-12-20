@@ -3,7 +3,6 @@ use crate::cheat::Cheat;
 use crate::parse_board::parse_board;
 use aoc_2024_lib::{board::Board, point2::Point2};
 use pathfinding::prelude::bfs;
-use pathfinding::prelude::bfs_reach;
 use std::collections::HashMap;
 
 fn compute_distances_to_end(board: &Board<Cell>, end: Point2) -> HashMap<Point2, usize> {
@@ -25,9 +24,15 @@ fn compute_distances_to_end(board: &Board<Cell>, end: Point2) -> HashMap<Point2,
 }
 
 pub fn find_all_cheats(input: &str, min_saved: usize) -> Vec<Cheat> {
+    assert!(min_saved > 1, "min_saved must be greater than 1");
+
     let board = parse_board(input);
     let start = board.find(&Cell::Start);
     let end = board.find(&Cell::End);
+
+    fn manhattan_distance(a: Point2, b: Point2) -> usize {
+        a.row.abs_diff(b.row) + a.col.abs_diff(b.col)
+    }
 
     let path = bfs(
         &start,
@@ -50,45 +55,47 @@ pub fn find_all_cheats(input: &str, min_saved: usize) -> Vec<Cheat> {
     if path.is_none() {
         return vec![];
     }
-    let path = path.unwrap();
-    let original_length = path.len();
+    let path = path.expect("No path found");
+    let original_length = path.len() - 1;
     let distances_to_end = compute_distances_to_end(&board, end);
+
+    fn cells_within_distance(
+        start: Point2,
+        distance: usize,
+        board: &Board<Cell>,
+    ) -> impl Iterator<Item = Point2> + '_ {
+        let min_row = start.row.saturating_sub(distance);
+        let max_row = (start.row + distance).min(board.height() - 1);
+        let min_col = start.col.saturating_sub(distance);
+        let max_col = (start.col + distance).min(board.width() - 1);
+
+        (min_row..=max_row)
+            .flat_map(move |row| (min_col..=max_col).map(move |col| Point2::new(row, col)))
+            .filter(move |p| manhattan_distance(start, *p) <= distance)
+    }
 
     let mut cheats = Vec::new();
 
     for (i, &start_pos) in path.iter().enumerate() {
-        bfs_reach((start_pos.row as isize, start_pos.col as isize), |pos| {
-            pathfinding::matrix::directions::DIRECTIONS_4
-                .iter()
-                .filter_map(|dir| {
-                    let next = (pos.0 + dir.0, pos.1 + dir.1);
-                    if !board.in_bounds(next) {
-                        return None;
-                    }
-                    Some(next)
-                })
-                .collect::<Vec<_>>()
-        })
-        .take(20)
-        .enumerate()
-        .for_each(|(steps, next)| {
-            let point = next.into();
-            if board[point] != Cell::Wall {
-                if let Some(&dist_to_end) = distances_to_end.get(&point) {
-                    let cheat_length = steps + 1;
-                    let new_total_length = i + cheat_length + dist_to_end;
-                    let saved = original_length.saturating_sub(new_total_length);
+        for end_pos in cells_within_distance(start_pos, 20, &board) {
+            if board[end_pos] == Cell::Wall {
+                continue;
+            }
 
-                    if saved >= min_saved {
-                        cheats.push(Cheat {
-                            start: start_pos,
-                            end: next.into(),
-                            length_saved: saved,
-                        });
-                    }
+            if let Some(&dist_to_end) = distances_to_end.get(&end_pos) {
+                let cheat_length = manhattan_distance(start_pos, end_pos);
+                let new_total_length = i + cheat_length + dist_to_end;
+                let saved = original_length.saturating_sub(new_total_length);
+
+                if saved >= min_saved {
+                    cheats.push(Cheat {
+                        start: start_pos,
+                        end: end_pos,
+                        length_saved: saved,
+                    });
                 }
             }
-        });
+        }
     }
 
     cheats
@@ -100,10 +107,47 @@ pub fn solve(input: &str, min_saved: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::{assert_cheat_count, group_cheats_by_time_saved};
+    use crate::test_utils::{
+        assert_cheat_count, group_cheats_by_time_saved, print_board_with_cheat,
+    };
 
     use super::*;
     use aoc_2024_lib::input_reader::read_input;
+
+    #[test]
+    fn test_super_trivial() {
+        let input = "
+            #####
+            #S#E#
+            #...#
+            #####
+        ";
+        let cheats = find_all_cheats(input, 2);
+
+        let board = &parse_board(input);
+        for cheat in cheats.iter() {
+            print_board_with_cheat(board, cheat);
+        }
+
+        assert_eq!(cheats.len(), 1);
+    }
+
+    #[test]
+    fn test_trivial() {
+        let input = "
+            ######
+            #S##E#
+            #....#
+            ######
+        ";
+        let board = &parse_board(input);
+        let cheats = find_all_cheats(input, 2);
+
+        for cheat in cheats.iter() {
+            print_board_with_cheat(board, cheat);
+        }
+        assert_eq!(cheats.len(), 1);
+    }
 
     #[test]
     fn test_example() {
@@ -111,7 +155,7 @@ mod tests {
         let example = &inputs.get_input("Example").content;
 
         let board = &parse_board(example);
-        let cheats = find_all_cheats(example, 50);
+        let cheats = find_all_cheats(example, 49);
         let by_time = &group_cheats_by_time_saved(&cheats);
 
         // There are 32 cheats that save 50 picoseconds.

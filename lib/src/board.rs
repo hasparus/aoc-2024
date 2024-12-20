@@ -122,4 +122,12 @@ impl<T> Board<T> {
 
         point.0 >= 0 && point.0 < rows as isize && point.1 >= 0 && point.1 < cols as isize
     }
+
+    pub fn height(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn width(&self) -> usize {
+        self.0[0].len()
+    }
 }

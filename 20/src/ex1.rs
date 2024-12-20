@@ -69,6 +69,7 @@ pub fn find_all_cheats(input: &str, min_length: usize) -> Vec<Cheat> {
                 }
 
                 // Find path from dest to end
+                // This should be cached or precomputed.
                 if let Some(shortcut_path) = bfs(
                     &dest.into(),
                     |pos: &Point2| {

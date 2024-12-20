@@ -34,14 +34,14 @@ pub fn assert_cheat_count(
 
     if cheats.len() != expected_count {
         for cheat in cheats {
-            print_board_with_cheat(board.clone(), cheat);
+            print_board_with_cheat(board, cheat);
         }
 
         if cheats.len() == 0 {
             for (time, cheats) in cheats_by_time.iter() {
                 println!("Cheats saving {time} picoseconds:");
                 for cheat in cheats {
-                    print_board_with_cheat(board.clone(), cheat);
+                    print_board_with_cheat(board, cheat);
                 }
             }
         }
@@ -54,7 +54,7 @@ pub fn assert_cheat_count(
     }
 }
 
-pub fn print_board_with_cheat(board: Board<Cell>, cheat: &Cheat) {
+pub fn print_board_with_cheat(board: &Board<Cell>, cheat: &Cheat) {
     let mut board = board.clone();
 
     let path = bfs(

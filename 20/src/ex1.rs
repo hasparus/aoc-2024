@@ -2,22 +2,9 @@ use aoc_2024_lib::board::Board;
 use aoc_2024_lib::point2::Point2;
 use pathfinding::matrix::directions::DIRECTIONS_4;
 use pathfinding::prelude::bfs;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::{cell::Cell, cheat::Cheat, parse_board::parse_board};
-
-type CheatPositions = (Point2, Point2);
-
-fn group_cheats_by_time_saved(cheats: &Vec<Cheat>) -> HashMap<usize, Vec<&Cheat>> {
-    let mut cheats_by_time = HashMap::new();
-    for cheat in cheats {
-        cheats_by_time
-            .entry(cheat.length_saved)
-            .or_insert(vec![])
-            .push(cheat);
-    }
-    cheats_by_time
-}
 
 pub fn find_all_cheats(input: &str, min_length: usize) -> Vec<Cheat> {
     let board = parse_board(input);
@@ -164,12 +151,16 @@ pub fn solve(input: &str, min_length: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_board::parse_board, test_utils, test_utils::assert_cheat_count};
+    use crate::{
+        parse_board::parse_board,
+        test_utils::{self, assert_cheat_count, group_cheats_by_time_saved},
+    };
     use aoc_2024_lib::input_reader::read_input;
     use pretty_assertions::assert_eq;
 
-    const assert_is_cheat: fn(input: &str, expected: bool) -> () =
-        |input, expected| test_utils::assert_is_cheat(is_cheat, input, expected);
+    fn assert_is_cheat(input: &str, expected: bool) {
+        test_utils::assert_is_cheat(is_cheat, input, expected);
+    }
 
     #[test]
     fn horizontal_wall_between() {
@@ -255,7 +246,7 @@ mod tests {
             #....#
             ######
         ";
-        let cheats = find_all_cheats(input, 0);
+        let cheats = find_all_cheats(input, 2);
         let by_time = group_cheats_by_time_saved(&cheats);
         let board = parse_board(input);
 
@@ -271,7 +262,7 @@ mod tests {
             ##...#
             ######
         ";
-        let cheats = find_all_cheats(input, 0);
+        let cheats = find_all_cheats(input, 2);
         let board = parse_board(input);
         let by_time = group_cheats_by_time_saved(&cheats);
 
@@ -292,7 +283,7 @@ mod tests {
             #######
         ";
         let board = parse_board(input);
-        let cheats = find_all_cheats(input, 0);
+        let cheats = find_all_cheats(input, 2);
         let by_time = group_cheats_by_time_saved(&cheats);
 
         println!("{:?}", by_time);

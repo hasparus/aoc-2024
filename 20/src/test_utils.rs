@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use aoc_2024_lib::board::Board;
-
 use crate::{cell::Cell, cheat::Cheat, parse_board::parse_board};
+use aoc_2024_lib::board::Board;
+use std::collections::HashMap;
 
 pub fn assert_is_cheat(is_cheat: fn(&Board<Cell>, &Cheat) -> bool, input: &str, expected: bool) {
     let board = parse_board(input);
@@ -70,4 +68,15 @@ pub fn print_board_with_cheat(board: Board<Cell>, cheat: &Cheat) {
     }
 
     println!("{}", board);
+}
+
+pub fn group_cheats_by_time_saved(cheats: &Vec<Cheat>) -> HashMap<usize, Vec<&Cheat>> {
+    let mut cheats_by_time = HashMap::new();
+    for cheat in cheats {
+        cheats_by_time
+            .entry(cheat.length_saved)
+            .or_insert(vec![])
+            .push(cheat);
+    }
+    cheats_by_time
 }

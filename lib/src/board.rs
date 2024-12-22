@@ -3,6 +3,12 @@ use crate::point2::Point2;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board<T>(pub Vec<Vec<T>>);
 
+impl<T> Board<T> {
+    pub fn new(data: Vec<Vec<T>>) -> Self {
+        Self(data)
+    }
+}
+
 impl<T: std::fmt::Display> std::fmt::Display for Board<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for row in &self.0 {
@@ -13,6 +19,20 @@ impl<T: std::fmt::Display> std::fmt::Display for Board<T> {
             )?;
         }
         Ok(())
+    }
+}
+
+impl<T> std::ops::Index<(u8, u8)> for Board<T> {
+    type Output = T;
+
+    fn index(&self, index: (u8, u8)) -> &Self::Output {
+        &self.0[index.0 as usize][index.1 as usize]
+    }
+}
+
+impl<T> std::ops::IndexMut<(u8, u8)> for Board<T> {
+    fn index_mut(&mut self, index: (u8, u8)) -> &mut Self::Output {
+        &mut self.0[index.0 as usize][index.1 as usize]
     }
 }
 
@@ -38,9 +58,17 @@ impl<T> std::ops::Index<Point2> for Board<T> {
     }
 }
 
-impl<T> std::ops::IndexMut<Point2> for Board<T> {
-    fn index_mut(&mut self, index: Point2) -> &mut Self::Output {
-        &mut self.0[index.row][index.col]
+impl<T> std::ops::Index<(isize, isize)> for Board<T> {
+    type Output = T;
+
+    fn index(&self, index: (isize, isize)) -> &Self::Output {
+        &self.0[index.0 as usize][index.1 as usize]
+    }
+}
+
+impl<T> std::ops::IndexMut<(isize, isize)> for Board<T> {
+    fn index_mut(&mut self, index: (isize, isize)) -> &mut Self::Output {
+        &mut self.0[index.0 as usize][index.1 as usize]
     }
 }
 

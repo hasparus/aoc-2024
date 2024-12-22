@@ -83,7 +83,7 @@ handle_action(jump(Target), _, Target).
 handle_action(out(_), IP, NewIP) :- NewIP is IP + 2.
 
 find_minimal_a_for_program(Program, [B, C], A) :-
-    numlist(1, 1000000, Candidates),
+    numlist(23655599799999, 236555997999999, Candidates),
     member(A, Candidates),
     run_program(Program, [A, B, C], Program),
     !.  % Cut after first solution since we want minimal

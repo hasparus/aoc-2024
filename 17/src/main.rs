@@ -1,5 +1,4 @@
 mod ex1;
-mod ex2;
 mod types;
 
 use aoc_2024_lib::input_reader::read_input;

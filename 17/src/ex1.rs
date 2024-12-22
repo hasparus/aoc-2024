@@ -1,18 +1,10 @@
 use crate::types::*;
 
 pub fn solve(input: &str) -> String {
-    let input = input.trim().split("\n\n").collect::<Vec<&str>>();
-    let mut registers = input[0]
-        .trim()
-        .parse::<Registers>()
-        .expect("Failed to parse registers");
-    let program = input[1]
-        .trim()
-        .parse::<Program>()
-        .expect("Failed to parse program");
+    let (mut registers, program) = parse_input(input);
 
     let mut instruction_pointer = 0;
-    let mut output = Vec::<i64>::new();
+    let mut output = Vec::<u64>::new();
 
     while instruction_pointer < program.len() {
         let opcode = Opcode::from(program[instruction_pointer]);
@@ -25,7 +17,7 @@ pub fn solve(input: &str) -> String {
                 instruction_pointer += 2;
             }
             Opcode::Bxl => {
-                registers.b = Register(registers.b.0 ^ operand as i64);
+                registers.b = Register(registers.b.0 ^ operand as u64);
                 instruction_pointer += 2;
             }
             Opcode::Bst => {
@@ -69,8 +61,23 @@ pub fn solve(input: &str) -> String {
         .join(",")
 }
 
+pub fn parse_input(input: &str) -> (Registers, Program) {
+    let input = input.trim().split("\n\n").collect::<Vec<&str>>();
+
+    let registers = input[0]
+        .trim()
+        .parse::<Registers>()
+        .expect("Failed to parse registers");
+    let program = input[1]
+        .trim()
+        .parse::<Program>()
+        .expect("Failed to parse program");
+
+    (registers, program)
+}
+
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
     use aoc_2024_lib::input_reader::read_input;
 

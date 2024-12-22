@@ -3,7 +3,7 @@ use std::ops::Index;
 use parse_display::{Display, DisplayFormat, FromStr, FromStrFormat};
 
 #[derive(Debug, Clone, Copy, Display, FromStr)]
-pub struct Register(pub i64);
+pub struct Register(pub u64);
 
 #[derive(Debug, Clone, Display, FromStr)]
 #[display("Register A: {a}\nRegister B: {b}\nRegister C: {c}")]
@@ -15,7 +15,7 @@ pub struct Registers {
 
 #[derive(Debug, Clone, Display, FromStr)]
 #[display("Program: {0}")]
-pub struct Program(#[display(with = CommaSeparated)] Vec<u8>);
+pub struct Program(#[display(with = CommaSeparated)] pub Vec<u8>);
 
 impl Index<usize> for Program {
     type Output = u8;
@@ -95,7 +95,7 @@ impl From<u8> for ComboOperand {
 }
 
 impl ComboOperand {
-    pub fn value(&self, registers: &Registers) -> i64 {
+    pub fn value(&self, registers: &Registers) -> u64 {
         match self {
             ComboOperand::Zero => 0,
             ComboOperand::One => 1,

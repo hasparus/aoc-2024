@@ -21,8 +21,6 @@ pub fn solve(input: &str, size: u8) -> (u8, u8) {
         }
     }
 
-    println!("result: {:?}", points[low - 1]);
-
     points[low - 1]
 }
 

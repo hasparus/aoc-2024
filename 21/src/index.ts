@@ -7,6 +7,23 @@ import {
   type ArrowKey,
   type NumericKey,
 } from "./keypads";
+import { readInput } from "./readInput";
+
+function keepShortestPaths(paths: string[]): string[] {
+  if (paths.length === 0) return paths;
+
+  let minLength = Infinity;
+  for (const path of paths) {
+    const length = path.length;
+    if (length < minLength) {
+      minLength = length;
+    }
+  }
+
+  const shortestPaths = paths.filter((p) => p.length === minLength);
+
+  return Array.from(new Set(shortestPaths));
+}
 
 export function solve(input: string) {
   const numericKeypadGraph = createKeypadGraph(NUMERIC_KEYPAD, " ");
@@ -26,10 +43,13 @@ export function solve(input: string) {
     );
 
     for (let nesting = 0; nesting < ARROW_NESTING_LEVELS; nesting++) {
-      arrows = expandArrows(arrows, arrowKeypadShortestPaths);
+      arrows = arrows.flatMap((path) =>
+        expandArrows(path, arrowKeypadShortestPaths)
+      );
+      arrows = keepShortestPaths(arrows);
     }
 
-    return arrows;
+    return arrows[0];
   });
 
   const complexities = sequences.map((sequence, i) => {
@@ -42,59 +62,68 @@ export function solve(input: string) {
     return expanded[i].length * numericPartOfTheCode;
   });
 
-  console.log(
-    complexities
-      .map(
-        (complexity, i) =>
-          `${sequences[i]}: ${expanded[i].length} * ${parseInt(
-            sequences[i]
-          )} == ${complexity}`
-      )
-      .join("\n")
-  );
   return complexities.reduce((acc, complexity) => acc + complexity, 0);
 }
 
 export function expandNumbers(
   keys: NumericKey[],
   paths: ShortestPaths<NumericKey>
-): ArrowKey[] {
+): string[] {
   const start = "A" as NumericKey;
 
-  let res: ArrowKey[] = [];
+  let allPaths = [""];
 
   let current = start;
   for (const key of keys) {
-    const toKey = paths.get(current)!.get(key)!;
+    const possiblePaths = paths.get(current)!.get(key)!;
 
-    res.push(...toKey.map((edge) => directionToArrow(edge.dir)), "A");
+    allPaths = allPaths.flatMap((path) =>
+      possiblePaths.map(
+        (edges) =>
+          path + edges.map((edge) => directionToArrow(edge.dir)).join("") + "A"
+      )
+    );
 
+    allPaths = keepShortestPaths(allPaths);
     current = key;
   }
 
-  return res;
+  return allPaths;
 }
 
 export function expandArrows(
-  keys: ArrowKey[],
+  path: string,
   arrowKeypadShortestPaths: ShortestPaths<ArrowKey>
-): ArrowKey[] {
+): string[] {
   const start = "A" as ArrowKey;
 
-  let res: ArrowKey[] = [];
+  let allPaths = [""];
 
   let current = start;
-  for (const key of keys) {
-    const toKey = arrowKeypadShortestPaths.get(current)!.get(key)!;
+  for (const key of path) {
+    const possiblePaths = arrowKeypadShortestPaths
+      .get(current)!
+      .get(key as ArrowKey)!;
 
-    res.push(...toKey.map((edge) => directionToArrow(edge.dir)), "A");
+    allPaths = allPaths.flatMap((p) =>
+      possiblePaths.map(
+        (edges) =>
+          p + edges.map((edge) => directionToArrow(edge.dir)).join("") + "A"
+      )
+    );
 
-    current = key;
+    allPaths = keepShortestPaths(allPaths);
+    current = key as ArrowKey;
   }
 
-  return res;
+  return allPaths;
 }
 
-function directionToArrow(dir: Direction): ArrowKey {
+export function directionToArrow(dir: Direction): ArrowKey {
   return dir === UP ? "^" : dir === DOWN ? "v" : dir === LEFT ? "<" : ">";
+}
+
+if (import.meta.main) {
+  const input = await readInput("Input");
+  console.log(solve(input));
 }

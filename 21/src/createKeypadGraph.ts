@@ -13,7 +13,6 @@ export function createKeypadGraph<T>(grid: Grid<T>, empty: T): Graph<T> {
 
       const neighbors = new Set<Edge<T>>();
 
-      let i = 0;
       for (const direction of DIRECTIONS) {
         const newRow = row + direction[0];
         const newCol = col + direction[1];
@@ -28,7 +27,6 @@ export function createKeypadGraph<T>(grid: Grid<T>, empty: T): Graph<T> {
           neighbors.add({
             dir: direction,
             val: grid[newRow][newCol],
-            weight: 1,
           });
         }
       }

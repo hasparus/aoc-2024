@@ -129,42 +129,45 @@ export function directionToArrow(dir: Direction): ArrowKey {
 
 // #region part 2
 
-const getKeypressesRequired = memoize(function getKeypressesRequiredInternal<
-  TKey
->(from: TKey, to: TKey, depth: number, shortestPaths: ShortestPaths<TKey>) {
-  const paths = shortestPaths.get(from)!.get(to)!;
+export const getKeypressesRequired = memoize(
+  function getKeypressesRequiredInternal<TKey>(
+    from: TKey,
+    to: TKey,
+    depth: number,
+    shortestPaths: ShortestPaths<TKey>
+  ) {
+    const paths = shortestPaths.get(from)!.get(to)!;
 
-  console.log(`get ${from} -> ${to} depth: ${depth}`);
+    console.log(`get ${from} -> ${to} depth: ${depth}`);
 
-  if (depth === 0) {
-    console.log(`    ${from} -> ${to}: path length ${paths[0].length}`);
-    return paths[0].length + 1;
-  }
+    if (depth === 0) {
+      console.log(`    ${from} -> ${to}: path length ${paths[0].length}`);
+      return paths[0].length + 1;
+    }
 
-  let leastKeypressesRequired = Infinity;
+    let leastKeypressesRequired = Infinity;
 
-  for (const path of paths) {
-    const sequence = [
-      "A" as TKey, // we always start with A
-      ...path.map((edge) => directionToArrow(edge.dir)),
-    ];
-    let cost = 0;
-    for (let i = 0; i < sequence.length; i++) {
-      const key = sequence[i];
-      const nextKey = sequence[i + 1];
+    for (const path of paths) {
+      const sequence = [
+        "A" as TKey, // we always start with A
+        ...path.map((edge) => directionToArrow(edge.dir)),
+        "A" as TKey,
+      ];
 
-      if (nextKey) {
+      let cost = 0;
+      for (let i = 0; i < sequence.length - 1; i++) {
+        const key = sequence[i];
+        const nextKey = sequence[i + 1];
+
         cost += getKeypressesRequired(key, nextKey, depth - 1, shortestPaths);
       }
+
+      leastKeypressesRequired = Math.min(leastKeypressesRequired, cost);
     }
 
-    if (cost < leastKeypressesRequired) {
-      leastKeypressesRequired = cost;
-    }
+    return leastKeypressesRequired;
   }
-
-  return leastKeypressesRequired;
-});
+);
 
 export function part2(input: string, arrowNestingLevels: number = 25) {
   const numericKeypadGraph = createKeypadGraph(NUMERIC_KEYPAD, " ");
@@ -233,16 +236,8 @@ function memoize<F extends (...args: any[]) => any>(fn: F): F {
   }) as F;
 }
 
-// #endregion part 2
-
 if (import.meta.main) {
   const input = await readInput("Input");
 
-  if (process.argv.includes("--part=1")) {
-    console.log(part1(input));
-  } else if (process.argv.includes("--part=2")) {
-    console.log(part2(input));
-  } else {
-    console.log("Please specify --part=1 or --part=2");
-  }
+  console.log(part2(input));
 }

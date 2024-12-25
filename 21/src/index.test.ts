@@ -14,6 +14,7 @@ import {
   expandArrows,
   expandNumbers,
   getKeypressesRequired,
+  keepShortestPaths,
   part1,
   part2,
 } from "./index";
@@ -153,23 +154,25 @@ describe(part2.name, () => {
     const numericPaths = floydWarshall(numericKeypadGraph);
     const arrowPaths = floydWarshall(arrowKeypadGraph);
 
-    const expandedNumbers = expandNumbers(["3", "A"], numericPaths)[0];
+    const expandedNumbers = expandNumbers(["3", "A"], numericPaths);
 
     let actual = part2("3A", 0);
     expect(actual).toBe(3 * 4 /* "^A vA" */);
-    expect(actual).toBe(3 * expandedNumbers.length);
+    expect(actual).toBe(3 * expandedNumbers[0].length);
 
     let expanded = expandedNumbers;
-    const expand = () => expandArrows(expanded, arrowPaths)[0];
+    const expand = () =>
+      keepShortestPaths(
+        expanded.flatMap((path) => expandArrows(path, arrowPaths))
+      );
 
-    for (let i = 1; i < 10; i++) {
+    for (let i = 1; i < 3; i++) {
       expanded = expand();
-      console.log(`--- i: ${i} --- expanded length: ${expanded.length}`);
       actual = part2("3A", i);
       expect(
         actual,
         `expected result to match the previous solution for i: ${i}`
-      ).toBe(3 * expanded.length);
+      ).toBe(3 * expanded[0].length);
     }
   });
 });

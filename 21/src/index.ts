@@ -11,7 +11,7 @@ import { readInput } from "./readInput";
 
 // #region part 1
 
-function keepShortestPaths(paths: string[]): string[] {
+export function keepShortestPaths(paths: string[]): string[] {
   if (paths.length === 0) return paths;
 
   let minLength = Infinity;
@@ -138,10 +138,7 @@ export const getKeypressesRequired = memoize(
   ) {
     const paths = shortestPaths.get(from)!.get(to)!;
 
-    console.log(`get ${from} -> ${to} depth: ${depth}`);
-
     if (depth === 0) {
-      console.log(`    ${from} -> ${to}: path length ${paths[0].length}`);
       return paths[0].length + 1;
     }
 
@@ -204,7 +201,6 @@ export function part2(input: string, arrowNestingLevels: number = 25) {
             arrowNestingLevels - 1,
             arrowKeypadShortestPaths
           );
-          console.log("top level", `${key} -> ${nextKey}, cost: ${cost}`);
         }
       }
       return cost;

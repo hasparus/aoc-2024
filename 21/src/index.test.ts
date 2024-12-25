@@ -9,7 +9,13 @@ import {
 import { createKeypadGraph } from "./createKeypadGraph";
 import type { Edge } from "./graph";
 import { LEFT, RIGHT, UP } from "./directions";
-import { directionToArrow, expandArrows, expandNumbers, solve } from "./index";
+import {
+  directionToArrow,
+  expandArrows,
+  expandNumbers,
+  part1,
+  part2,
+} from "./index";
 import { readInput } from "./readInput";
 
 const numericKeypadGraph = createKeypadGraph(NUMERIC_KEYPAD, " ");
@@ -117,10 +123,18 @@ describe(expandArrows.name, () => {
   });
 });
 
-describe(solve.name, () => {
+describe(part1.name, () => {
   test("solves the example", async () => {
     const input = await readInput("Example");
 
-    expect(solve(input)).toBe(126384);
+    expect(part1(input)).toBe(126384);
+  });
+});
+
+describe(part2.name, () => {
+  test("solves the example", async () => {
+    const input = await readInput("Example");
+
+    expect(part2(input, 2)).toBe(126384);
   });
 });

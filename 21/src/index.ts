@@ -134,8 +134,11 @@ const getKeypressesRequired = memoize(function getKeypressesRequiredInternal<
 >(from: TKey, to: TKey, depth: number, shortestPaths: ShortestPaths<TKey>) {
   const paths = shortestPaths.get(from)!.get(to)!;
 
+  console.log(`get ${from} -> ${to} depth: ${depth}`);
+
   if (depth === 0) {
-    return paths[0].length;
+    console.log(`    ${from} -> ${to}: path length ${paths[0].length}`);
+    return paths[0].length + 1;
   }
 
   let leastKeypressesRequired = Infinity;
@@ -178,6 +181,13 @@ export function part2(input: string, arrowNestingLevels: number = 25) {
       numericKeypadShortestPaths
     );
 
+    if (arrowNestingLevels === 0) {
+      return arrows.reduce(
+        (acc, keys) => (acc < keys.length ? acc : keys.length),
+        Infinity
+      );
+    }
+
     const keypressesRequired = arrows.map((keys) => {
       const sequence = "A" + keys;
       let cost = 0;
@@ -188,9 +198,10 @@ export function part2(input: string, arrowNestingLevels: number = 25) {
           cost += getKeypressesRequired(
             key,
             nextKey,
-            arrowNestingLevels,
+            arrowNestingLevels - 1,
             arrowKeypadShortestPaths
           );
+          console.log("top level", `${key} -> ${nextKey}, cost: ${cost}`);
         }
       }
       return cost;

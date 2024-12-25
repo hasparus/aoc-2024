@@ -137,4 +137,38 @@ describe(part2.name, () => {
 
     expect(part2(input, 2)).toBe(126384);
   });
+
+  test.only("debugging part 2", () => {
+    expect(part2("3A", 0)).toBe(3 * 4);
+
+    const numericPaths = floydWarshall(numericKeypadGraph);
+    const arrowPaths = floydWarshall(arrowKeypadGraph);
+
+    // why is it 18?
+    const expandedNumbers = expandNumbers(["3", "A"], numericPaths)[0];
+
+    let actual = part2("3A", 0);
+    expect(actual).toBe(3 * 4 /* "^A vA" */);
+    expect(actual).toBe(3 * expandedNumbers.length);
+
+    let expanded = expandedNumbers;
+    const expand = () => expandArrows(expanded, arrowPaths)[0];
+
+    // actual = part2("3A", 1);
+    // expect(actual).toBe(3 * 10 /* "<A >A <vA ^>A" */);
+    // expanded = expand();
+    // console.log(`expanded: ${expanded}`);
+    // expect(actual).toBe(3 * expanded.length);
+
+    for (let i = 1; i < 10; i++) {
+      console.clear();
+      expanded = expand();
+      console.log(`--- i: ${i} --- expanded length: ${expanded.length}`);
+      actual = part2("3A", i);
+      expect(
+        actual,
+        `expected result to match the previous solution for i: ${i}`
+      ).toBe(3 * expanded.length);
+    }
+  });
 });

@@ -15,17 +15,17 @@ fn main() -> Result<()> {
         .get(1)
         .expect("Please provide the part number to run as first argument.");
 
-    for Input { name, content } in inputs.sections {
-        if part == "1" {
+    if part == "1" {
+        for Input { name, content } in inputs.sections {
             let result = ex1::solve(&content);
             println!("ex1\t{name}\t{result}");
-        } else if part == "2" {
-            let result = ex2::solve(&content);
-            println!("ex2\t{name}\t{result}");
-        } else {
-            panic!("Invalid part number: {part}");
         }
+    } else if part == "2" {
+        let input = inputs.get_input("Input");
+        let result = ex2::solve(&input.content);
+        println!("ex2\t{result}");
+    } else {
+        panic!("Invalid part number: {part}");
     }
-
     Ok(())
 }

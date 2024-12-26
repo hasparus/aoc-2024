@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::parse_input::{parse_input, Gate, GateKind};
+use crate::parse_input::{parse_input, GateKind};
 
 pub fn solve(input: &str) -> u64 {
     let (mut wires, gates) = parse_input(input);
 
+    // this should be a topological sort or a tree, but I'm lazy
     let mut queue = VecDeque::from(gates);
 
     while let Some(gate) = queue.pop_front() {

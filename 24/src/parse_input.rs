@@ -1,9 +1,11 @@
 use std::{collections::HashMap, str::from_utf8};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Wire(pub [u8; 3]);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, parse_display::Display, parse_display::FromStr)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, parse_display::Display, parse_display::FromStr, Hash,
+)]
 #[display(style = "UPPERCASE")]
 pub enum GateKind {
     And,
@@ -36,6 +38,12 @@ impl std::fmt::Display for Wire {
     }
 }
 
+impl std::fmt::Debug for Wire {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 impl std::str::FromStr for Wire {
     type Err = Box<dyn std::error::Error>;
 
@@ -53,8 +61,21 @@ impl std::str::FromStr for Wire {
     }
 }
 
+impl Ord for Wire {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl PartialOrd for Wire {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 pub fn parse_input(input: &str) -> (HashMap<Wire, bool>, Vec<Gate>) {
     let [init_values, gates] = input.split("\n\n").collect::<Vec<_>>()[..] else {
+        eprintln!("{}", input);
         panic!("invalid input, expected two sections separated by a newline");
     };
 
